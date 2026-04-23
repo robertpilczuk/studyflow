@@ -31,6 +31,7 @@ import {
 let currentUser = null;
 let rcConfig = {};
 let editingNoteId = null;
+let editingQuizId = null;
 let quizQuestions = [];          // tymczasowo przy budowaniu quizu
 let playerState = {};          // stan quiz playera
 let analyticsEvents = [];
@@ -388,6 +389,7 @@ function renderQuizzes(quizzes) {
       <p class="quiz-card-meta">Utworzono: ${formatDate(q.createdAt)}</p>
       <div class="quiz-card-actions">
         <button class="btn-primary sm" onclick="startQuiz('${q.id}')">Rozwiąż</button>
+        <button class="btn-ghost" onclick="editQuiz('${q.id}')">Edytuj</button>
         <button class="btn-ghost" onclick="deleteQuiz('${q.id}')">Usuń</button>
       </div>
     </div>
@@ -397,9 +399,11 @@ function renderQuizzes(quizzes) {
 // ─── QUIZ BUILDER ───
 window.openQuizModal = function () {
   if (!rcConfig.quizzes_enabled) return showToast("Quizy wyłączone (Remote Config).", "error");
+  editingQuizId = null;
   quizQuestions = [];
   document.getElementById("quiz-name-input").value = "";
   document.getElementById("questions-builder").innerHTML = "";
+  document.getElementById("quiz-modal-title").textContent = "Nowy quiz";
   addQuestion();
   document.getElementById("quiz-modal").style.display = "flex";
 };
@@ -468,24 +472,102 @@ window.removeQuestion = function (idx) {
   quizQuestions.splice(idx, 1);
 };
 
+
+window.editQuiz = async function (id) {
+  if (!rcConfig.quizzes_enabled) return showToast("Quizy wyłączone (Remote Config).", "error");
+  const snap = await getDoc(doc(db, "quizzes", id));
+  if (!snap.exists()) return showToast("Nie znaleziono quizu.", "error");
+
+  const quiz = snap.data();
+  editingQuizId = id;
+  quizQuestions = [];
+
+  document.getElementById("quiz-name-input").value = quiz.name;
+  document.getElementById("questions-builder").innerHTML = "";
+  document.getElementById("quiz-modal-title").textContent = "Edytuj quiz";
+
+  // Załaduj istniejące pytania do buildera
+  quiz.questions.forEach(q => {
+    const idx = quizQuestions.length;
+    quizQuestions.push({ text: q.text, options: [...q.options], correct: q.correct });
+
+    const builder = document.getElementById("questions-builder");
+    const block = document.createElement("div");
+    block.className = "question-block";
+    block.innerHTML = `
+      <div class="question-block-header">
+        <span class="question-num">Pytanie ${idx + 1}</span>
+        <button class="icon-btn remove-btn">✕</button>
+      </div>
+      <div class="field">
+        <label>Treść pytania</label>
+        <input type="text" class="q-text" placeholder="Wpisz pytanie..." value="${esc(q.text)}" />
+      </div>
+      <div class="options-grid">
+        ${["A", "B", "C", "D"].map((l, i) => `
+          <div class="option-input">
+            <span class="option-label">${l}</span>
+            <input type="text" class="q-opt" data-opt="${i}" placeholder="Odpowiedź ${l}" value="${esc(q.options[i])}" />
+          </div>
+        `).join("")}
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>Poprawna odpowiedź</label>
+        <select class="q-correct">
+          <option value="0"${q.correct === 0 ? " selected" : ""}>A</option>
+          <option value="1"${q.correct === 1 ? " selected" : ""}>B</option>
+          <option value="2"${q.correct === 2 ? " selected" : ""}>C</option>
+          <option value="3"${q.correct === 3 ? " selected" : ""}>D</option>
+        </select>
+      </div>
+    `;
+
+    block.querySelector(".remove-btn").addEventListener("click", () => {
+      block.remove();
+      quizQuestions.splice(idx, 1);
+    });
+    block.querySelector(".q-text").addEventListener("input", e => {
+      quizQuestions[idx].text = e.target.value;
+    });
+    block.querySelectorAll(".q-opt").forEach(input => {
+      input.addEventListener("input", e => {
+        quizQuestions[idx].options[+e.target.dataset.opt] = e.target.value;
+      });
+    });
+    block.querySelector(".q-correct").addEventListener("change", e => {
+      quizQuestions[idx].correct = +e.target.value;
+    });
+
+    builder.appendChild(block);
+  });
+
+  document.getElementById("quiz-modal").style.display = "flex";
+};
 window.saveQuiz = async function () {
   const name = document.getElementById("quiz-name-input").value.trim();
   if (!name) return showToast("Wpisz nazwę quizu.", "error");
 
-  // Walidacja pytań
   const valid = quizQuestions.filter(q => q.text.trim() && q.options.every(o => o.trim()));
   if (!valid.length) return showToast("Dodaj co najmniej jedno kompletne pytanie.", "error");
 
-  await addDoc(collection(db, "quizzes"), {
-    uid: currentUser.uid, name, questions: valid, createdAt: serverTimestamp()
-  });
-  await updateDoc(doc(db, "users", currentUser.uid), { quizzesCount: increment(1) });
-  pushActivity(`Utworzono quiz: ${name}`);
-  trackAnalytics("quiz_created", { name, question_count: valid.length });
+  if (editingQuizId) {
+    await updateDoc(doc(db, "quizzes", editingQuizId), { name, questions: valid, updatedAt: serverTimestamp() });
+    pushActivity(`Edytowano quiz: ${name}`);
+    trackAnalytics("quiz_updated", { name });
+    showToast("Quiz zaktualizowany!", "success");
+  } else {
+    await addDoc(collection(db, "quizzes"), {
+      uid: currentUser.uid, name, questions: valid, createdAt: serverTimestamp()
+    });
+    await updateDoc(doc(db, "users", currentUser.uid), { quizzesCount: increment(1) });
+    pushActivity(`Utworzono quiz: ${name}`);
+    trackAnalytics("quiz_created", { name, question_count: valid.length });
+    showToast("Quiz zapisany!", "success");
+  }
+
   closeQuizModal();
   loadQuizzes();
   loadDashboard();
-  showToast("Quiz zapisany!", "success");
 };
 
 window.deleteQuiz = async function (id) {
