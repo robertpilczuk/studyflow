@@ -36,6 +36,7 @@ let quizQuestions = [];          // tymczasowo przy budowaniu quizu
 let playerState = {};          // stan quiz playera
 let analyticsEvents = [];
 let firestoreUnsub = null;
+let allNotes = [];          // cache notatek do wyszukiwania
 
 // ─────────────────────────────────────────────────────
 // BOOTSTRAP — inicjalizacja po załadowaniu strony
@@ -258,6 +259,59 @@ async function loadDashboard() {
   }
 }
 
+
+// ─────────────────────────────────────────────────────
+// WYSZUKIWARKA I SORTOWANIE NOTATEK
+// ─────────────────────────────────────────────────────
+window.filterNotes = function () {
+  const query = document.getElementById("notes-search").value.trim().toLowerCase();
+  const sort = document.getElementById("notes-sort").value;
+  const clearBtn = document.getElementById("search-clear");
+  const noResults = document.getElementById("notes-no-results");
+
+  clearBtn.style.display = query ? "" : "none";
+
+  let filtered = [...allNotes];
+
+  // Filtrowanie
+  if (query) {
+    filtered = filtered.filter(n =>
+      n.title.toLowerCase().includes(query) ||
+      n.content.toLowerCase().includes(query)
+    );
+  }
+
+  // Sortowanie
+  filtered.sort((a, b) => {
+    if (sort === "date-desc") return toMs(b.createdAt) - toMs(a.createdAt);
+    if (sort === "date-asc") return toMs(a.createdAt) - toMs(b.createdAt);
+    if (sort === "alpha-asc") return a.title.localeCompare(b.title, "pl");
+    if (sort === "alpha-desc") return b.title.localeCompare(a.title, "pl");
+    return 0;
+  });
+
+  // Pokaż "brak wyników"
+  if (noResults) {
+    noResults.style.display = query && !filtered.length ? "" : "none";
+    const label = document.getElementById("search-query-label");
+    if (label) label.textContent = query;
+  }
+
+  renderNotes(filtered);
+};
+
+window.clearSearch = function () {
+  document.getElementById("notes-search").value = "";
+  document.getElementById("search-clear").style.display = "none";
+  filterNotes();
+};
+
+function toMs(ts) {
+  if (!ts) return 0;
+  if (ts.toDate) return ts.toDate().getTime();
+  return new Date(ts).getTime();
+}
+
 // ─────────────────────────────────────────────────────
 // 2️⃣  NOTATKI — Cloud Firestore
 // ─────────────────────────────────────────────────────
@@ -272,10 +326,10 @@ async function loadNotes() {
   // Realtime listener
   if (firestoreUnsub) firestoreUnsub();
   firestoreUnsub = onSnapshot(q, snapshot => {
-    const notes = [];
-    snapshot.forEach(d => notes.push({ id: d.id, ...d.data() }));
-    renderNotes(notes);
-    document.getElementById("stat-notes").textContent = notes.length;
+    allNotes = [];
+    snapshot.forEach(d => allNotes.push({ id: d.id, ...d.data() }));
+    renderNotes(allNotes);
+    document.getElementById("stat-notes").textContent = allNotes.length;
   });
 }
 
