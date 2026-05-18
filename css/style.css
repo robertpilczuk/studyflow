@@ -1712,6 +1712,284 @@ body {
   color    : var(--accent-green);
 }
 
+/* ── DECKS GRID ── */
+.decks-grid {
+  display              : grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap                  : 1rem;
+}
+
+.deck-card {
+  background   : var(--bg-2);
+  border       : 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding      : 1.25rem;
+  transition   : all var(--transition);
+  border-top   : 3px solid var(--accent-purple);
+}
+
+.deck-card:hover {
+  border-color: var(--border-mid);
+  transform   : translateY(-2px);
+}
+
+.deck-card-title {
+  font-family  : var(--font-head);
+  font-size    : 16px;
+  font-weight  : 600;
+  color        : var(--text);
+  margin-bottom: 4px;
+  overflow     : hidden;
+  text-overflow: ellipsis;
+  white-space  : nowrap;
+}
+
+.deck-card-desc {
+  font-size    : 12px;
+  color        : var(--text-2);
+  margin-bottom: 10px;
+  overflow     : hidden;
+  text-overflow: ellipsis;
+  white-space  : nowrap;
+}
+
+.deck-card-meta {
+  display      : flex;
+  gap          : 8px;
+  margin-bottom: 1rem;
+  flex-wrap    : wrap;
+}
+
+.deck-meta-chip {
+  font-family  : var(--font-mono);
+  font-size    : 10px;
+  padding      : 2px 8px;
+  border-radius: 20px;
+  border       : 1px solid var(--border);
+  color        : var(--text-2);
+}
+
+.deck-meta-chip.new {
+  color       : var(--accent-blue);
+  border-color: rgba(59, 130, 246, 0.3);
+  background  : rgba(59, 130, 246, 0.08);
+}
+
+.deck-meta-chip.review {
+  color       : var(--accent-amber);
+  border-color: rgba(245, 158, 11, 0.3);
+  background  : rgba(245, 158, 11, 0.08);
+}
+
+.deck-meta-chip.done {
+  color       : var(--accent-green);
+  border-color: rgba(34, 197, 94, 0.3);
+  background  : rgba(34, 197, 94, 0.08);
+}
+
+.deck-card-actions {
+  display: flex;
+  gap    : 6px;
+}
+
+/* ── FLASHCARD (study mode) ── */
+.flashcard-container {
+  perspective  : 1000px;
+  margin-bottom: 1.5rem;
+}
+
+.flashcard {
+  width          : 100%;
+  min-height     : 180px;
+  position       : relative;
+  transform-style: preserve-3d;
+  transition     : transform 0.5s ease;
+  cursor         : pointer;
+}
+
+.flashcard.flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  position           : absolute;
+  inset              : 0;
+  backface-visibility: hidden;
+  background         : var(--bg-3);
+  border             : 1px solid var(--border-mid);
+  border-radius      : var(--radius-md);
+  display            : flex;
+  flex-direction     : column;
+  align-items        : center;
+  justify-content    : center;
+  padding            : 1.5rem;
+  text-align         : center;
+}
+
+.flashcard-face.back {
+  transform   : rotateY(180deg);
+  background  : rgba(59, 130, 246, 0.06);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.flashcard-label {
+  font-family   : var(--font-mono);
+  font-size     : 10px;
+  color         : var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom : 12px;
+}
+
+.flashcard-text {
+  font-family: var(--font-head);
+  font-size  : 22px;
+  font-weight: 600;
+  color      : var(--text);
+  line-height: 1.3;
+}
+
+.flashcard-hint {
+  font-size  : 11px;
+  color      : var(--text-3);
+  margin-top : 12px;
+  font-family: var(--font-mono);
+}
+
+.study-progress {
+  display        : flex;
+  justify-content: space-between;
+  align-items    : center;
+  margin-bottom  : 1rem;
+  font-size      : 12px;
+  color          : var(--text-2);
+  font-family    : var(--font-mono);
+}
+
+.study-actions {
+  display              : grid;
+  grid-template-columns: 1fr 1fr;
+  gap                  : 8px;
+  margin-top           : 1rem;
+}
+
+.btn-knew {
+  padding      : 10px;
+  background   : rgba(34, 197, 94, 0.1);
+  border       : 1px solid rgba(34, 197, 94, 0.3);
+  color        : var(--accent-green);
+  border-radius: var(--radius-sm);
+  font-family  : var(--font-body);
+  font-size    : 14px;
+  font-weight  : 500;
+  cursor       : pointer;
+  transition   : all var(--transition);
+}
+
+.btn-knew:hover {
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.btn-didnt-know {
+  padding      : 10px;
+  background   : rgba(239, 68, 68, 0.1);
+  border       : 1px solid rgba(239, 68, 68, 0.3);
+  color        : #ef4444;
+  border-radius: var(--radius-sm);
+  font-family  : var(--font-body);
+  font-size    : 14px;
+  font-weight  : 500;
+  cursor       : pointer;
+  transition   : all var(--transition);
+}
+
+.btn-didnt-know:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.study-summary {
+  text-align: center;
+  padding   : 1rem 0;
+}
+
+.study-summary-stats {
+  display              : grid;
+  grid-template-columns: 1fr 1fr;
+  gap                  : 10px;
+  margin               : 1rem 0;
+}
+
+.study-stat-box {
+  background   : var(--bg-3);
+  border-radius: var(--radius-sm);
+  padding      : 12px;
+  text-align   : center;
+}
+
+.study-stat-val {
+  font-family: var(--font-head);
+  font-size  : 28px;
+  font-weight: 700;
+}
+
+.study-stat-label {
+  font-size : 11px;
+  color     : var(--text-2);
+  margin-top: 2px;
+}
+
+/* ── FC STATS ── */
+.fc-stats-content {
+  display              : grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap                  : 1rem;
+}
+
+.fc-stat-card {
+  background   : var(--bg-2);
+  border       : 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding      : 1.25rem;
+}
+
+.fc-stat-card h3 {
+  font-family  : var(--font-head);
+  font-size    : 15px;
+  font-weight  : 600;
+  margin-bottom: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .decks-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .study-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── GEMINI LIMIT BANNERS ── */
+.gemini-limit-banner {
+  padding      : 7px 12px;
+  border-radius: var(--radius-sm);
+  font-size    : 12px;
+  font-family  : var(--font-mono);
+  margin-bottom: 8px;
+}
+
+.gemini-limit-banner.warning {
+  background: rgba(245, 158, 11, 0.1);
+  border    : 1px solid rgba(245, 158, 11, 0.3);
+  color     : var(--accent-amber);
+}
+
+.gemini-limit-banner.blocked {
+  background: rgba(239, 68, 68, 0.1);
+  border    : 1px solid rgba(239, 68, 68, 0.3);
+  color     : #ef4444;
+}
+
 /* ── NOTES TOOLBAR ── */
 .notes-toolbar {
   display      : flex;

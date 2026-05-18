@@ -147,6 +147,10 @@
         <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M10 6v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         Quizy
       </a>
+      <a class="nav-item" onclick="showSection('flashcards')" href="#">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M6 10h8M10 7v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Fiszki
+      </a>
       <a class="nav-item" onclick="showSection('analytics')" href="#">
         <svg viewBox="0 0 20 20" fill="none"><path d="M3 15l4-6 4 3 4-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Analityka
@@ -288,6 +292,33 @@
       </div>
     </section>
 
+    <!-- FLASHCARDS -->
+    <section id="section-flashcards" class="section">
+      <div class="section-header">
+        <h1>Fiszki</h1>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-ghost" onclick="openAiFlashcardsModal()">✨ Generuj AI</button>
+          <button class="btn-primary sm" onclick="openDeckModal()">+ Nowa talia</button>
+        </div>
+      </div>
+
+      <div class="section-tabs">
+        <button class="section-tab active" id="tab-decks" onclick="switchFlashcardsTab('decks')">Moje talie</button>
+        <button class="section-tab" id="tab-fc-stats" onclick="switchFlashcardsTab('stats')">Statystyki</button>
+      </div>
+
+      <div id="decks-tab-content">
+        <div id="decks-grid" class="decks-grid"></div>
+        <div id="decks-empty" class="empty-state" style="display:none">
+          <p>Brak talii. Utwórz pierwszą lub wygeneruj przez AI!</p>
+        </div>
+      </div>
+
+      <div id="fc-stats-tab-content" style="display:none">
+        <div id="fc-stats-content" class="fc-stats-content"></div>
+      </div>
+    </section>
+
     <!-- ANALYTICS -->
     <section id="section-analytics" class="section">
       <div class="section-header">
@@ -327,6 +358,10 @@
       <button class="bottom-nav-item" onclick="showSection('quizzes');setActiveBottomNav(this)">
         <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M10 6v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Quizy</span>
+      </button>
+      <button class="bottom-nav-item" onclick="showSection('flashcards');setActiveBottomNav(this)">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M6 10h8M10 7v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Fiszki</span>
       </button>
       <button class="bottom-nav-item" onclick="showSection('analytics');setActiveBottomNav(this)">
         <svg viewBox="0 0 20 20" fill="none"><path d="M3 15l4-6 4 3 4-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -442,6 +477,75 @@
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeAiModal()">Anuluj</button>
       <button class="btn-primary sm" id="ai-generate-btn" onclick="generateQuizAI()">✨ Generuj</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deck Modal -->
+<div id="deck-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="deck-modal-title">Nowa talia</h2>
+      <button class="modal-close" onclick="closeDeckModal()">✕</button>
+    </div>
+    <div class="field">
+      <label>Nazwa talii</label>
+      <input type="text" id="deck-name-input" placeholder="Np. Angielski — słówka" />
+    </div>
+    <div class="field">
+      <label>Opis (opcjonalnie)</label>
+      <input type="text" id="deck-desc-input" placeholder="Krótki opis talii..." />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeDeckModal()">Anuluj</button>
+      <button class="btn-primary sm" onclick="saveDeck()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<!-- Flashcard Study Modal -->
+<div id="study-modal" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2 id="study-deck-name">Nauka</h2>
+      <button class="modal-close" onclick="closeStudyModal()">✕</button>
+    </div>
+    <div id="study-content"></div>
+  </div>
+</div>
+
+<!-- AI Flashcards Modal -->
+<div id="ai-flashcards-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>✨ Generuj fiszki przez AI</h2>
+      <button class="modal-close" onclick="closeAiFlashcardsModal()">✕</button>
+    </div>
+    <div class="field">
+      <label>Temat</label>
+      <input type="text" id="ai-fc-topic" placeholder="Np. angielskie słówka poziom B2, stolice Europy..." />
+    </div>
+    <div class="field">
+      <label>Liczba fiszek</label>
+      <select id="ai-fc-count">
+        <option value="10">10 fiszek</option>
+        <option value="20" selected>20 fiszek</option>
+        <option value="30">30 fiszek</option>
+        <option value="50">50 fiszek</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Język fiszek</label>
+      <select id="ai-fc-lang">
+        <option value="polski">Polski</option>
+        <option value="angielski">Angielski (przód) / Polski (tył)</option>
+        <option value="mieszany">Angielski (obydwie strony)</option>
+      </select>
+    </div>
+    <div id="ai-fc-status" class="ai-status" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeAiFlashcardsModal()">Anuluj</button>
+      <button class="btn-primary sm" id="ai-fc-btn" onclick="generateFlashcardsAI()">✨ Generuj</button>
     </div>
   </div>
 </div>

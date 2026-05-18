@@ -286,6 +286,7 @@ window.showSection = function (name) {
   });
 
   if (name === "notes") { loadNotes(); }
+  if (name === "flashcards") { loadDecks(); }
   if (name === "quizzes") { loadQuizzes(); loadResults(); }
   if (name === "analytics") renderAnalyticsSection();
 
@@ -1007,55 +1008,81 @@ function renderRemoteConfig() {
 // ─────────────────────────────────────────────────────
 // GEMINI USAGE TRACKER
 // ─────────────────────────────────────────────────────
-const GEMINI_DAILY_LIMIT = 250;
+const GEMINI_DAILY_LIMIT = 20;
 
-function getGeminiUsage() {
+function getGeminiUsage(key = "gemini_usage_quiz") {
   const today = new Date().toISOString().slice(0, 10);
   try {
-    const stored = JSON.parse(localStorage.getItem("gemini_usage") || "{}");
+    const stored = JSON.parse(localStorage.getItem(key) || "{}");
     if (stored.date !== today) return { date: today, count: 0 };
     return stored;
   } catch (e) { return { date: today, count: 0 }; }
 }
 
-function incrementGeminiUsage() {
-  const usage = getGeminiUsage();
+function incrementGeminiUsage(key = "gemini_usage_quiz") {
+  const usage = getGeminiUsage(key);
   usage.count++;
-  localStorage.setItem("gemini_usage", JSON.stringify(usage));
+  localStorage.setItem(key, JSON.stringify(usage));
   renderGeminiUsage();
 }
 
-function renderGeminiUsage() {
-  const el = document.getElementById("gemini-usage-widget");
-  if (!el) return;
-  const { count } = getGeminiUsage();
-  const used = count;
+function isGeminiLimitReached(key = "gemini_usage_quiz") {
+  return getGeminiUsage(key).count >= GEMINI_DAILY_LIMIT;
+}
+
+function isGeminiLimitWarning(key = "gemini_usage_quiz") {
+  return getGeminiUsage(key).count >= Math.floor(GEMINI_DAILY_LIMIT * 0.75);
+}
+
+function renderUsageWidget(el, used, label) {
   const remaining = Math.max(0, GEMINI_DAILY_LIMIT - used);
   const pct = Math.min(100, Math.round((used / GEMINI_DAILY_LIMIT) * 100));
-  const barColor = pct >= 90 ? "var(--accent-coral)" : pct >= 60 ? "var(--accent-amber)" : "var(--accent-green)";
+  const barColor = pct >= 100 ? "var(--accent-coral)" : pct >= 75 ? "var(--accent-amber)" : "var(--accent-green)";
+  const warning = pct >= 75 && pct < 100;
+  const blocked = pct >= 100;
 
   el.innerHTML = `
     <div class="gemini-usage-header">
-      <span class="gemini-usage-title">Gemini API &mdash; dzienny limit</span>
+      <span class="gemini-usage-title">${label}</span>
       <span class="gemini-usage-count" style="color:${barColor}">${used}&thinsp;/&thinsp;${GEMINI_DAILY_LIMIT}</span>
     </div>
+    ${blocked ? '<div class="gemini-limit-banner blocked">🚫 Dzienny limit wyczerpany — spróbuj jutro</div>' :
+      warning ? '<div class="gemini-limit-banner warning">⚠ Limit się kończy — zostało ' + remaining + ' zapytań</div>' : ''}
     <div class="gemini-usage-bar-bg">
       <div class="gemini-usage-bar-fill" style="width:${pct}%;background:${barColor}"></div>
     </div>
     <div class="gemini-usage-meta">
       <span style="color:var(--text-3)">Wykorzystano: <strong style="color:${barColor}">${pct}%</strong></span>
-      <span style="color:var(--accent-green)">Pozostalo: <strong>${remaining} zapytan</strong></span>
+      <span style="color:var(--accent-green)">Pozostało: <strong>${remaining} zapytań</strong></span>
     </div>
     <div class="gemini-usage-dots">
-      ${Array.from({ length: 25 }, (_, i) => {
-    const filled = i < Math.round(used / (GEMINI_DAILY_LIMIT / 25));
-    const color = filled
-      ? (pct >= 90 ? "var(--accent-coral)" : pct >= 60 ? "var(--accent-amber)" : "var(--accent-blue)")
-      : "var(--bg-4)";
-    return '<div class="gemini-dot" style="background:' + color + '"></div>';
-  }).join("")}
+      ${Array.from({ length: 20 }, (_, i) => {
+        const filled = i < used;
+        const color = filled
+          ? (blocked ? "var(--accent-coral)" : warning ? "var(--accent-amber)" : "var(--accent-blue)")
+          : "var(--bg-4)";
+        return '<div class="gemini-dot" style="background:' + color + '"></div>';
+      }).join("")}
     </div>
   `;
+}
+
+function renderGeminiUsage() {
+  const el = document.getElementById("gemini-usage-widget");
+  if (!el) return;
+  const quizUsage = getGeminiUsage("gemini_usage_quiz").count;
+  const fcUsage = getGeminiUsage("gemini_usage_fc").count;
+
+  el.innerHTML = "";
+
+  const quizEl = document.createElement("div");
+  quizEl.style.marginBottom = "1rem";
+  renderUsageWidget(quizEl, quizUsage, "Quizy — dzienny limit (20 zapytań)");
+  el.appendChild(quizEl);
+
+  const fcEl = document.createElement("div");
+  renderUsageWidget(fcEl, fcUsage, "Fiszki — dzienny limit (20 zapytań)");
+  el.appendChild(fcEl);
 }
 
 // ─────────────────────────────────────────────────────
@@ -1082,6 +1109,9 @@ window.generateQuizAI = async function () {
   const level = document.getElementById("ai-level").value;
 
   if (!topic) return showToast("Wpisz temat quizu.", "error");
+  if (isGeminiLimitReached("gemini_usage_quiz")) {
+    return showToast("Dzienny limit zapytań AI dla quizów wyczerpany. Spróbuj jutro.", "error");
+  }
 
   const statusEl = document.getElementById("ai-status");
   const previewEl = document.getElementById("ai-preview");
@@ -1124,7 +1154,7 @@ Gdzie "correct" to indeks (0-3) poprawnej odpowiedzi. Pytania i odpowiedzi pisz 
     const clean = raw.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
     aiGeneratedQuestions = parsed.questions;
-    incrementGeminiUsage();
+    incrementGeminiUsage("gemini_usage_quiz");
 
     // Pokaż podgląd
     statusEl.innerHTML = `✓ Wygenerowano ${aiGeneratedQuestions.length} pytań. Sprawdź podgląd:`;
@@ -1382,6 +1412,362 @@ window.nextPublicQuestion = function () {
   }
   renderPublicQuestion();
 };
+
+
+// ═══════════════════════════════════════════════════════
+// 🃏 FISZKI — FLASHCARDS
+// ═══════════════════════════════════════════════════════
+let allDecks = [];
+let studyState = {};
+
+// ─── ŁADOWANIE TALII ───
+async function loadDecks() {
+  const q = query(
+    collection(db, "decks"),
+    where("uid", "==", currentUser.uid),
+    orderBy("createdAt", "desc")
+  );
+  try {
+    const snap = await getDocs(q);
+    allDecks = [];
+    snap.forEach(d => allDecks.push({ id: d.id, ...d.data() }));
+    renderDecks();
+  } catch (e) {
+    console.warn("Decks index not ready:", e.message);
+  }
+}
+
+function renderDecks() {
+  const grid = document.getElementById("decks-grid");
+  const empty = document.getElementById("decks-empty");
+  if (!allDecks.length) {
+    grid.innerHTML = "";
+    empty.style.display = "";
+    return;
+  }
+  empty.style.display = "none";
+
+  grid.innerHTML = allDecks.map(d => {
+    const total = d.cards?.length || 0;
+    const newCount = d.cards?.filter(c => !c.nextReview || toMs(c.nextReview) <= Date.now()).length || 0;
+    const doneCount = total - newCount;
+    return `
+      <div class="deck-card">
+        <p class="deck-card-title">${esc(d.name)}</p>
+        <p class="deck-card-desc">${esc(d.description || "")}</p>
+        <div class="deck-card-meta">
+          <span class="deck-meta-chip">${total} fiszek</span>
+          <span class="deck-meta-chip review">Do powtórki: ${newCount}</span>
+          <span class="deck-meta-chip done">Opanowane: ${doneCount}</span>
+        </div>
+        <div class="deck-card-actions">
+          <button class="btn-primary sm" onclick="startStudy('${d.id}')">Ucz się</button>
+          <button class="btn-ghost" onclick="openDeckModal('${d.id}')">Edytuj</button>
+          <button class="btn-ghost" onclick="deleteDeck('${d.id}')">Usuń</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ─── TALIA MODAL ───
+window.openDeckModal = function (id) {
+  const deck = id ? allDecks.find(d => d.id === id) : null;
+  document.getElementById("deck-modal-title").textContent = deck ? "Edytuj talię" : "Nowa talia";
+  document.getElementById("deck-name-input").value = deck?.name || "";
+  document.getElementById("deck-desc-input").value = deck?.description || "";
+  document.getElementById("deck-modal").dataset.editId = id || "";
+  document.getElementById("deck-modal").style.display = "flex";
+};
+window.closeDeckModal = () => { document.getElementById("deck-modal").style.display = "none"; };
+
+window.saveDeck = async function () {
+  const name = document.getElementById("deck-name-input").value.trim();
+  const description = document.getElementById("deck-desc-input").value.trim();
+  if (!name) return showToast("Wpisz nazwę talii.", "error");
+
+  const editId = document.getElementById("deck-modal").dataset.editId;
+
+  if (editId) {
+    await updateDoc(doc(db, "decks", editId), { name, description, updatedAt: serverTimestamp() });
+    showToast("Talia zaktualizowana!", "success");
+    trackAnalytics("deck_updated", { name });
+  } else {
+    await addDoc(collection(db, "decks"), {
+      uid: currentUser.uid, name, description, cards: [], createdAt: serverTimestamp()
+    });
+    showToast("Talia utworzona!", "success");
+    trackAnalytics("deck_created", { name });
+    pushActivity(`Utworzono talię: ${name}`);
+  }
+  closeDeckModal();
+  loadDecks();
+};
+
+window.deleteDeck = async function (id) {
+  if (!confirm("Usunąć talię ze wszystkimi fiszkami?")) return;
+  await deleteDoc(doc(db, "decks", id));
+  trackAnalytics("deck_deleted", {});
+  pushActivity("Usunięto talię fiszek");
+  loadDecks();
+};
+
+// ─── TRYB NAUKI ───
+window.startStudy = async function (deckId) {
+  const snap = await getDoc(doc(db, "decks", deckId));
+  if (!snap.exists()) return;
+  const deck = { id: snap.id, ...snap.data() };
+
+  if (!deck.cards?.length) return showToast("Talia jest pusta.", "error");
+
+  // Filtruj fiszki do powtórki (nowe lub zalegające)
+  const due = deck.cards.filter(c => !c.nextReview || toMs(c.nextReview) <= Date.now());
+  const cards = due.length ? due : deck.cards; // jeśli wszystko opanowane — powtórz wszystko
+
+  studyState = {
+    deckId, deck,
+    cards: [...cards].sort(() => Math.random() - 0.5),
+    current: 0, flipped: false,
+    knew: 0, didntKnow: 0,
+    done: false
+  };
+
+  document.getElementById("study-deck-name").textContent = deck.name;
+  document.getElementById("study-modal").style.display = "flex";
+  trackAnalytics("study_started", { deck_name: deck.name, cards: cards.length });
+  renderStudyCard();
+};
+window.closeStudyModal = () => { document.getElementById("study-modal").style.display = "none"; };
+
+function renderStudyCard() {
+  const { cards, current, flipped, done, knew, didntKnow } = studyState;
+  const content = document.getElementById("study-content");
+  const total = cards.length;
+
+  if (done) {
+    const pct = Math.round((knew / total) * 100);
+    content.innerHTML = `
+      <div class="study-summary">
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:0.5rem">Sesja zakończona!</p>
+        <div class="study-summary-stats">
+          <div class="study-stat-box">
+            <p class="study-stat-val" style="color:var(--accent-green)">${knew}</p>
+            <p class="study-stat-label">Umiałem ✅</p>
+          </div>
+          <div class="study-stat-box">
+            <p class="study-stat-val" style="color:#ef4444">${didntKnow}</p>
+            <p class="study-stat-label">Nie umiałem ❌</p>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:1rem">Wynik: <strong style="color:var(--accent-blue)">${pct}%</strong></p>
+        <div class="modal-actions" style="justify-content:center">
+          <button class="btn-ghost" onclick="closeStudyModal()">Zamknij</button>
+          <button class="btn-primary sm" onclick="startStudy('${studyState.deckId}')">Ucz się ponownie</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const card = cards[current];
+  const pct = Math.round((current / total) * 100);
+
+  content.innerHTML = `
+    <div class="study-progress">
+      <span>${current + 1} / ${total}</span>
+      <div class="progress-bar" style="flex:1;margin:0 12px"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <span style="color:var(--accent-green)">${studyState.knew} ✅</span>
+    </div>
+
+    <div class="flashcard-container" onclick="flipCard()">
+      <div class="flashcard ${flipped ? 'flipped' : ''}" id="study-flashcard">
+        <div class="flashcard-face front">
+          <p class="flashcard-label">Przód</p>
+          <p class="flashcard-text">${esc(card.front)}</p>
+          <p class="flashcard-hint">Kliknij aby zobaczyć odpowiedź</p>
+        </div>
+        <div class="flashcard-face back">
+          <p class="flashcard-label">Tył</p>
+          <p class="flashcard-text">${esc(card.back)}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="study-actions" id="study-actions" style="display:${flipped ? 'grid' : 'none'}">
+      <button class="btn-didnt-know" onclick="rateCard(false)">❌ Nie umiałem</button>
+      <button class="btn-knew" onclick="rateCard(true)">✅ Umiałem</button>
+    </div>
+  `;
+}
+
+window.flipCard = function () {
+  if (studyState.done) return;
+  studyState.flipped = !studyState.flipped;
+  const card = document.getElementById("study-flashcard");
+  if (card) card.classList.toggle("flipped");
+  const actions = document.getElementById("study-actions");
+  if (actions) actions.style.display = studyState.flipped ? "grid" : "none";
+};
+
+window.rateCard = async function (knew) {
+  const card = studyState.cards[studyState.current];
+  if (knew) {
+    studyState.knew++;
+    // Algorytm: jeśli umiałem, następna powtórka za 3 dni
+    card.interval = (card.interval || 1) * 2;
+    card.nextReview = new Date(Date.now() + card.interval * 24 * 60 * 60 * 1000).toISOString();
+  } else {
+    studyState.didntKnow++;
+    // Nie umiałem — wróć za 10 minut
+    card.interval = 0.007;
+    card.nextReview = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  }
+
+  // Zapisz postęp do Firestore
+  const deckSnap = await getDoc(doc(db, "decks", studyState.deckId));
+  if (deckSnap.exists()) {
+    const updatedCards = deckSnap.data().cards.map(c =>
+      c.front === card.front && c.back === card.back
+        ? { ...c, interval: card.interval, nextReview: card.nextReview }
+        : c
+    );
+    await updateDoc(doc(db, "decks", studyState.deckId), { cards: updatedCards });
+  }
+
+  if (studyState.current + 1 >= studyState.cards.length) {
+    studyState.done = true;
+    trackAnalytics("study_completed", { knew: studyState.knew, didntKnow: studyState.didntKnow });
+    pushActivity(`Ukończono sesję: ${studyState.deck.name} (${studyState.knew}/${studyState.cards.length})`);
+  } else {
+    studyState.current++;
+    studyState.flipped = false;
+  }
+  renderStudyCard();
+};
+
+// ─── AI GENEROWANIE FISZEK ───
+window.openAiFlashcardsModal = function () {
+  document.getElementById("ai-fc-topic").value = "";
+  document.getElementById("ai-fc-count").value = "20";
+  document.getElementById("ai-fc-lang").value = "polski";
+  document.getElementById("ai-fc-status").style.display = "none";
+  document.getElementById("ai-fc-btn").textContent = "✨ Generuj";
+  document.getElementById("ai-fc-btn").onclick = generateFlashcardsAI;
+  document.getElementById("ai-flashcards-modal").style.display = "flex";
+};
+window.closeAiFlashcardsModal = () => { document.getElementById("ai-flashcards-modal").style.display = "none"; };
+
+window.generateFlashcardsAI = async function () {
+  const topic = document.getElementById("ai-fc-topic").value.trim();
+  const count = document.getElementById("ai-fc-count").value;
+  const lang = document.getElementById("ai-fc-lang").value;
+  if (!topic) return showToast("Wpisz temat fiszek.", "error");
+  if (isGeminiLimitReached("gemini_usage_fc")) {
+    return showToast("Dzienny limit zapytań AI dla fiszek wyczerpany. Spróbuj jutro.", "error");
+  }
+
+  const statusEl = document.getElementById("ai-fc-status");
+  const btn = document.getElementById("ai-fc-btn");
+  statusEl.style.display = "flex";
+  statusEl.innerHTML = `<div class="ai-spinner"></div> Generuję ${count} fiszek na temat "${topic}"...`;
+  btn.disabled = true;
+
+  const langPrompt = lang === "angielski"
+    ? "Przód fiszki po angielsku, tył po polsku (tłumaczenie)."
+    : lang === "mieszany"
+      ? "Obie strony po angielsku."
+      : "Obie strony po polsku.";
+
+  const prompt = `Wygeneruj ${count} fiszek edukacyjnych na temat: "${topic}".
+${langPrompt}
+Odpowiedz WYŁĄCZNIE w formacie JSON (bez markdown):
+{
+  "deckName": "nazwa talii",
+  "cards": [
+    { "front": "przód fiszki", "back": "tył fiszki" }
+  ]
+}`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+        })
+      }
+    );
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    // Zapisz talię do Firestore
+    const cards = parsed.cards.map(c => ({
+      front: c.front, back: c.back,
+      interval: 0, nextReview: null
+    }));
+
+    await addDoc(collection(db, "decks"), {
+      uid: currentUser.uid,
+      name: parsed.deckName || `AI: ${topic}`,
+      description: `Wygenerowano przez AI — ${count} fiszek`,
+      cards,
+      createdAt: serverTimestamp(),
+      generatedByAI: true
+    });
+
+    incrementGeminiUsage("gemini_usage_fc");
+    trackAnalytics("ai_flashcards_generated", { topic, count: cards.length });
+    pushActivity(`Wygenerowano talię AI: ${topic}`);
+    closeAiFlashcardsModal();
+    loadDecks();
+    showToast(`Talia "${parsed.deckName || topic}" gotowa! 🎉`, "success");
+  } catch (e) {
+    statusEl.innerHTML = `✕ Błąd: ${e.message}`;
+    console.error("Gemini flashcards error:", e);
+  }
+  btn.disabled = false;
+};
+
+// ─── ZAKŁADKI FISZEK ───
+window.switchFlashcardsTab = function (tab) {
+  document.getElementById("tab-decks").classList.toggle("active", tab === "decks");
+  document.getElementById("tab-fc-stats").classList.toggle("active", tab === "stats");
+  document.getElementById("decks-tab-content").style.display = tab === "decks" ? "" : "none";
+  document.getElementById("fc-stats-tab-content").style.display = tab === "stats" ? "" : "none";
+  if (tab === "stats") renderFcStats();
+};
+
+function renderFcStats() {
+  const el = document.getElementById("fc-stats-content");
+  if (!allDecks.length) {
+    el.innerHTML = `<div class="empty-state"><p>Brak talii do wyświetlenia statystyk.</p></div>`;
+    return;
+  }
+  el.innerHTML = allDecks.map(d => {
+    const total = d.cards?.length || 0;
+    const due = d.cards?.filter(c => !c.nextReview || toMs(c.nextReview) <= Date.now()).length || 0;
+    const mastered = d.cards?.filter(c => c.interval >= 4).length || 0;
+    const pct = total ? Math.round((mastered / total) * 100) : 0;
+    return `
+      <div class="fc-stat-card">
+        <h3>${esc(d.name)}</h3>
+        <div class="gemini-usage-bar-bg" style="margin-bottom:8px">
+          <div class="gemini-usage-bar-fill" style="width:${pct}%;background:var(--accent-green)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-family:var(--font-mono)">
+          <span style="color:var(--text-2)">Opanowane: <strong style="color:var(--accent-green)">${pct}%</strong></span>
+          <span style="color:var(--accent-amber)">Do powtórki: ${due}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
 
 // ─────────────────────────────────────────────────────
 // HISTORIA WYNIKÓW
