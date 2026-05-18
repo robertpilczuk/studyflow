@@ -1133,3 +1133,227 @@ body {
   background   : var(--bg-4);
   border-radius: 3px;
 }
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE — MOBILE
+═══════════════════════════════════════════════════════ */
+
+/* ── HAMBURGER BUTTON ── */
+.hamburger {
+  display        : none;
+  flex-direction : column;
+  justify-content: center;
+  gap            : 5px;
+  width          : 36px;
+  height         : 36px;
+  background     : var(--bg-3);
+  border         : 1px solid var(--border);
+  border-radius  : var(--radius-sm);
+  cursor         : pointer;
+  padding        : 8px;
+  flex-shrink    : 0;
+}
+
+.hamburger span {
+  display      : block;
+  width        : 100%;
+  height       : 2px;
+  background   : var(--text-2);
+  border-radius: 2px;
+  transition   : all var(--transition);
+}
+
+/* ── SIDEBAR OVERLAY (mobile) ── */
+.sidebar-overlay {
+  display   : none;
+  position  : fixed;
+  inset     : 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index   : 99;
+}
+
+.sidebar-overlay.active {
+  display: block;
+}
+
+/* ── BOTTOM NAV (mobile) ── */
+.bottom-nav {
+  display   : none;
+  position  : fixed;
+  bottom    : 0;
+  left      : 0;
+  right     : 0;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+  z-index   : 98;
+  padding   : 8px 0 calc(8px + env(safe-area-inset-bottom));
+}
+
+.bottom-nav-items {
+  display        : flex;
+  justify-content: space-around;
+  align-items    : center;
+}
+
+.bottom-nav-item {
+  display        : flex;
+  flex-direction : column;
+  align-items    : center;
+  gap            : 3px;
+  padding        : 6px 16px;
+  color          : var(--text-3);
+  cursor         : pointer;
+  border-radius  : var(--radius-sm);
+  transition     : color var(--transition);
+  text-decoration: none;
+  border         : none;
+  background     : none;
+  font-family    : var(--font-body);
+}
+
+.bottom-nav-item svg {
+  width : 20px;
+  height: 20px;
+}
+
+.bottom-nav-item span {
+  font-size: 10px;
+}
+
+.bottom-nav-item.active {
+  color: var(--accent-blue);
+}
+
+@media (max-width: 768px) {
+
+  /* Sidebar chowany domyślnie */
+  .sidebar {
+    transform : translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index   : 200;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Main content zajmuje cały ekran */
+  .main-content {
+    margin-left   : 0;
+    padding       : 1rem;
+    padding-bottom: 80px;
+    /* miejsce na bottom nav */
+  }
+
+  /* Hamburger widoczny */
+  .hamburger {
+    display: flex;
+  }
+
+  /* Bottom nav widoczny */
+  .bottom-nav {
+    display: block;
+  }
+
+  /* Header sekcji */
+  .section-header {
+    flex-wrap: wrap;
+    gap      : 10px;
+  }
+
+  .section-header h1 {
+    font-size: 22px;
+  }
+
+  /* Stats grid — 2 kolumny zamiast 4 */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Dashboard grid — jedna kolumna */
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Notatki — jedna kolumna */
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Quizy — jedna kolumna */
+  .quizzes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Analytics — jedna kolumna */
+  .analytics-info {
+    grid-template-columns: 1fr;
+  }
+
+  /* Opcje odpowiedzi w builderze — jedna kolumna */
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Modal na pełny ekran */
+  .modal-overlay {
+    align-items: flex-end;
+    padding    : 0;
+  }
+
+  .modal {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height   : 92vh;
+    max-width    : 100%;
+  }
+
+  .modal-wide {
+    max-width: 100%;
+  }
+
+  /* Auth card — pełna szerokość */
+  .auth-card {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    margin-top   : auto;
+  }
+
+  .auth-screen {
+    align-items: flex-end;
+  }
+
+  /* Toast — na dole nad bottom nav */
+  .toast {
+    bottom    : 90px;
+    right     : 1rem;
+    left      : 1rem;
+    max-width : 100%;
+    text-align: center;
+  }
+
+  /* Przyciski kart quizów */
+  .quiz-card-actions {
+    flex-wrap: wrap;
+  }
+
+  .quiz-card-actions .btn-ghost,
+  .quiz-card-actions .btn-primary {
+    flex      : 1;
+    text-align: center;
+    font-size : 12px;
+    padding   : 8px 10px;
+  }
+
+  /* Większe pola dotykowe */
+  .field input,
+  .field textarea,
+  .field select {
+    font-size: 16px;
+    /* zapobiega auto-zoom na iOS */
+    padding  : 11px 14px;
+  }
+
+  /* Player options — większy obszar dotyku */
+  .player-option {
+    padding: 14px 16px;
+  }
+}

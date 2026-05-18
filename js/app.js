@@ -46,6 +46,13 @@ window.addEventListener("DOMContentLoaded", async () => {
   rcConfig = await loadRemoteConfig();
   renderRemoteConfig();
 
+  // Zamknij sidebar po kliknięciu nav-item na mobile
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeSidebar();
+    });
+  });
+
   // 1️⃣  Firebase Auth — obserwuj stan logowania
   onAuthStateChanged(auth, user => {
     if (user) {
@@ -767,3 +774,21 @@ function showToast(msg, type = "") {
   toastTimer = setTimeout(() => t.className = "toast", 3000);
 }
 window.showToast = showToast;
+
+// ─────────────────────────────────────────────────────
+// MOBILE — sidebar + bottom nav
+// ─────────────────────────────────────────────────────
+window.openSidebar = function () {
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('active');
+};
+
+window.closeSidebar = function () {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('active');
+};
+
+window.setActiveBottomNav = function (el) {
+  document.querySelectorAll('.bottom-nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+};
