@@ -934,6 +934,8 @@ function renderEventsLog() {
 
 function renderAnalyticsSection() {
   renderEventsLog();
+  renderRemoteConfig();
+  renderGeminiUsage();
 }
 
 // ─────────────────────────────────────────────────────
@@ -955,6 +957,61 @@ function renderRemoteConfig() {
 }
 
 
+
+
+// ─────────────────────────────────────────────────────
+// GEMINI USAGE TRACKER
+// ─────────────────────────────────────────────────────
+const GEMINI_DAILY_LIMIT = 250;
+
+function getGeminiUsage() {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const stored = JSON.parse(localStorage.getItem("gemini_usage") || "{}");
+    if (stored.date !== today) return { date: today, count: 0 };
+    return stored;
+  } catch (e) { return { date: today, count: 0 }; }
+}
+
+function incrementGeminiUsage() {
+  const usage = getGeminiUsage();
+  usage.count++;
+  localStorage.setItem("gemini_usage", JSON.stringify(usage));
+  renderGeminiUsage();
+}
+
+function renderGeminiUsage() {
+  const el = document.getElementById("gemini-usage-widget");
+  if (!el) return;
+  const { count } = getGeminiUsage();
+  const used = count;
+  const remaining = Math.max(0, GEMINI_DAILY_LIMIT - used);
+  const pct = Math.min(100, Math.round((used / GEMINI_DAILY_LIMIT) * 100));
+  const barColor = pct >= 90 ? "var(--accent-coral)" : pct >= 60 ? "var(--accent-amber)" : "var(--accent-green)";
+
+  el.innerHTML = `
+    <div class="gemini-usage-header">
+      <span class="gemini-usage-title">Gemini API &mdash; dzienny limit</span>
+      <span class="gemini-usage-count" style="color:${barColor}">${used}&thinsp;/&thinsp;${GEMINI_DAILY_LIMIT}</span>
+    </div>
+    <div class="gemini-usage-bar-bg">
+      <div class="gemini-usage-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+    </div>
+    <div class="gemini-usage-meta">
+      <span style="color:var(--text-3)">Wykorzystano: <strong style="color:${barColor}">${pct}%</strong></span>
+      <span style="color:var(--accent-green)">Pozostalo: <strong>${remaining} zapytan</strong></span>
+    </div>
+    <div class="gemini-usage-dots">
+      ${Array.from({ length: 25 }, (_, i) => {
+    const filled = i < Math.round(used / (GEMINI_DAILY_LIMIT / 25));
+    const color = filled
+      ? (pct >= 90 ? "var(--accent-coral)" : pct >= 60 ? "var(--accent-amber)" : "var(--accent-blue)")
+      : "var(--bg-4)";
+    return '<div class="gemini-dot" style="background:' + color + '"></div>';
+  }).join("")}
+    </div>
+  `;
+}
 
 // ─────────────────────────────────────────────────────
 // ✨ AI — GENEROWANIE QUIZÓW (GEMINI API)
@@ -1005,7 +1062,7 @@ Gdzie "correct" to indeks (0-3) poprawnej odpowiedzi. Pytania i odpowiedzi pisz 
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1022,6 +1079,7 @@ Gdzie "correct" to indeks (0-3) poprawnej odpowiedzi. Pytania i odpowiedzi pisz 
     const clean = raw.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
     aiGeneratedQuestions = parsed.questions;
+    incrementGeminiUsage();
 
     // Pokaż podgląd
     statusEl.innerHTML = `✓ Wygenerowano ${aiGeneratedQuestions.length} pytań. Sprawdź podgląd:`;
