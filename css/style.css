@@ -762,13 +762,20 @@ body {
   justify-content: space-between;
   align-items    : flex-start;
   margin-bottom  : 10px;
+  gap            : 8px;
 }
 
 .quiz-card-title {
-  font-family: var(--font-head);
-  font-size  : 16px;
-  font-weight: 600;
-  color      : var(--text);
+  font-family       : var(--font-head);
+  font-size         : 15px;
+  font-weight       : 600;
+  color             : var(--text);
+  overflow          : hidden;
+  text-overflow     : ellipsis;
+  display           : -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height       : 1.3;
 }
 
 .quiz-badge {
@@ -780,6 +787,7 @@ body {
   border-radius: 20px;
   color        : var(--accent-purple);
   white-space  : nowrap;
+  flex-shrink  : 0;
 }
 
 .quiz-card-meta {
@@ -789,8 +797,21 @@ body {
 }
 
 .quiz-card-actions {
+  display       : flex;
+  flex-direction: column;
+  gap           : 6px;
+}
+
+.quiz-card-actions-secondary {
   display: flex;
-  gap    : 8px;
+  gap    : 6px;
+}
+
+.quiz-card-actions-secondary .btn-ghost {
+  flex      : 1;
+  text-align: center;
+  font-size : 12px;
+  padding   : 7px 8px;
 }
 
 /* ── ANALYTICS ── */

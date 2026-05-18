@@ -594,9 +594,11 @@ function renderQuizzes(quizzes) {
       <p class="quiz-card-meta">Utworzono: ${formatDate(q.createdAt)}</p>
       <div class="quiz-card-actions">
         <button class="btn-primary sm" onclick="startQuiz('${q.id}')">Rozwiąż</button>
-        <button class="btn-ghost" onclick="shareQuiz('${q.id}','${esc(q.name)}',${!!q.public})">${q.public ? "🔗 Link" : "Udostępnij"}</button>
-        <button class="btn-ghost" onclick="editQuiz('${q.id}')">Edytuj</button>
-        <button class="btn-ghost" onclick="deleteQuiz('${q.id}')">Usuń</button>
+        <div class="quiz-card-actions-secondary">
+          <button class="btn-ghost" onclick="shareQuiz('${q.id}','${esc(q.name)}',${!!q.public})">${q.public ? "🔗 Link" : "Udostępnij"}</button>
+          <button class="btn-ghost" onclick="editQuiz('${q.id}')">Edytuj</button>
+          <button class="btn-ghost" onclick="deleteQuiz('${q.id}')">Usuń</button>
+        </div>
       </div>
     </div>
   `).join("");
