@@ -12,7 +12,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 import {
@@ -66,6 +67,37 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
+
+// ─────────────────────────────────────────────────────
+// EMAIL VERIFICATION
+// ─────────────────────────────────────────────────────
+function showVerificationScreen() {
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("verification-screen").style.display = "flex";
+  const email = currentUser.email;
+  document.getElementById("verification-email").textContent = email;
+}
+
+window.resendVerification = async function () {
+  try {
+    await sendEmailVerification(currentUser);
+    showToast("E-mail weryfikacyjny wysłany ponownie!", "success");
+  } catch (e) {
+    showToast("Poczekaj chwilę przed ponownym wysłaniem.", "error");
+  }
+};
+
+window.checkVerification = async function () {
+  await currentUser.reload();
+  if (currentUser.emailVerified) {
+    document.getElementById("verification-screen").style.display = "none";
+    showApp();
+  } else {
+    showToast("E-mail jeszcze nie potwierdzony.", "error");
+  }
+};
+
 // ─────────────────────────────────────────────────────
 // AUTH HELPERS
 // ─────────────────────────────────────────────────────
@@ -90,6 +122,7 @@ async function registerUser() {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(cred.user, { displayName: name });
+    await sendEmailVerification(cred.user);
 
     // Zapisz profil użytkownika w Firestore
     await setDoc(doc(db, "users", cred.user.uid), {
@@ -100,7 +133,7 @@ async function registerUser() {
 
     // 5️⃣  Analytics — rejestruj rejestrację
     trackAnalytics("sign_up", { method: "email" });
-    showToast("Konto utworzone!", "success");
+    showToast("Konto utworzone! Sprawdź e-mail i potwierdź adres.", "success");
   } catch (e) {
     errEl.textContent = translateAuthError(e.code);
   }
@@ -151,6 +184,14 @@ function showAuth() {
 }
 
 function showApp() {
+  // Sprawdź weryfikację e-mail (pomijaj na localhost)
+  const isDev = window.location.hostname === "127.0.0.1" ||
+    window.location.hostname === "localhost";
+  if (!currentUser.emailVerified && !isDev) {
+    showVerificationScreen();
+    return;
+  }
+
   document.getElementById("auth-screen").style.display = "none";
   document.getElementById("app").style.display = "flex";
 

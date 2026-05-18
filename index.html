@@ -1,350 +1,338 @@
 <!DOCTYPE html>
 <html lang="pl">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>StudyFlow</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
-
 <body>
 
-  <!-- ═══════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════════
      AUTH SCREEN
 ═══════════════════════════════════════════════════════ -->
-  <div id="auth-screen" class="auth-screen">
-    <div class="auth-bg-grid"></div>
-    <div class="auth-card">
-      <div class="auth-logo">
-        <span class="logo-mark">SF</span>
-        <span class="logo-text">StudyFlow</span>
-      </div>
-      <p class="auth-sub">Twój asystent nauki i quizów</p>
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-bg-grid"></div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="logo-mark">SF</span>
+      <span class="logo-text">StudyFlow</span>
+    </div>
+    <p class="auth-sub">Twój asystent nauki i quizów</p>
 
-      <div class="tab-switcher">
-        <button class="tab-btn active" id="tab-login" onclick="switchAuthTab('login')">Logowanie</button>
-        <button class="tab-btn" id="tab-register" onclick="switchAuthTab('register')">Rejestracja</button>
-      </div>
+    <div class="tab-switcher">
+      <button class="tab-btn active" id="tab-login" onclick="switchAuthTab('login')">Logowanie</button>
+      <button class="tab-btn" id="tab-register" onclick="switchAuthTab('register')">Rejestracja</button>
+    </div>
 
-      <div id="login-form">
-        <div class="field">
-          <label>E-mail</label>
-          <input type="email" id="login-email" placeholder="jan@kowalski.pl" />
-        </div>
-        <div class="field">
-          <label>Hasło</label>
-          <input type="password" id="login-password" placeholder="••••••••" />
-        </div>
-        <button class="btn-primary" onclick="loginUser()">Zaloguj się</button>
+    <div id="login-form">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="login-email" placeholder="jan@kowalski.pl" />
       </div>
+      <div class="field">
+        <label>Hasło</label>
+        <input type="password" id="login-password" placeholder="••••••••" />
+      </div>
+      <button class="btn-primary" onclick="loginUser()">Zaloguj się</button>
+    </div>
 
-      <div id="register-form" style="display:none">
-        <div class="field">
-          <label>Imię i nazwisko</label>
-          <input type="text" id="reg-name" placeholder="Jan Kowalski" />
-        </div>
-        <div class="field">
-          <label>E-mail</label>
-          <input type="email" id="reg-email" placeholder="jan@kowalski.pl" />
-        </div>
-        <div class="field">
-          <label>Hasło</label>
-          <input type="password" id="reg-password" placeholder="min. 6 znaków" />
-        </div>
-        <button class="btn-primary" onclick="registerUser()">Utwórz konto</button>
+    <div id="register-form" style="display:none">
+      <div class="field">
+        <label>Imię i nazwisko</label>
+        <input type="text" id="reg-name" placeholder="Jan Kowalski" />
       </div>
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="reg-email" placeholder="jan@kowalski.pl" />
+      </div>
+      <div class="field">
+        <label>Hasło</label>
+        <input type="password" id="reg-password" placeholder="min. 6 znaków" />
+      </div>
+      <button class="btn-primary" onclick="registerUser()">Utwórz konto</button>
+    </div>
 
-      <div id="auth-error" class="auth-error"></div>
-      <div class="firebase-badge">
-        <span class="fb-dot"></span> Firebase Authentication
-      </div>
+    <div id="auth-error" class="auth-error"></div>
+    <div class="firebase-badge">
+      <span class="fb-dot"></span> Firebase Authentication
     </div>
   </div>
+</div>
 
-  <!-- ═══════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════════
+     VERIFICATION SCREEN
+═══════════════════════════════════════════════════════ -->
+<div id="verification-screen" style="display:none" class="auth-screen">
+  <div class="auth-bg-grid"></div>
+  <div class="auth-card" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:1rem">📧</div>
+    <div class="auth-logo" style="justify-content:center;margin-bottom:0.5rem">
+      <span class="logo-mark">SF</span>
+      <span class="logo-text">StudyFlow</span>
+    </div>
+    <h2 style="font-family:var(--font-head);font-size:20px;margin:1rem 0 0.5rem">Potwierdź adres e-mail</h2>
+    <p style="font-size:13px;color:var(--text-2);margin-bottom:0.25rem">Wysłaliśmy link weryfikacyjny na:</p>
+    <p style="font-size:14px;font-weight:600;color:var(--accent-blue);margin-bottom:1.5rem;font-family:var(--font-mono)" id="verification-email"></p>
+    <p style="font-size:12px;color:var(--text-2);margin-bottom:1.5rem">Kliknij link w e-mailu, a następnie wróć tutaj i kliknij przycisk poniżej.</p>
+    <button class="btn-primary" onclick="checkVerification()" style="margin-bottom:0.75rem">Już potwierdziłem ✓</button>
+    <button class="btn-ghost" style="width:100%" onclick="resendVerification()">Wyślij ponownie</button>
+    <button class="btn-logout" onclick="logoutUser()" style="margin-top:1rem">Wyloguj</button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
      MAIN APP
 ═══════════════════════════════════════════════════════ -->
-  <div id="app" style="display:none">
+<div id="app" style="display:none">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <span class="logo-mark sm">SF</span>
-        <span class="logo-text">StudyFlow</span>
-      </div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-mark sm">SF</span>
+      <span class="logo-text">StudyFlow</span>
+    </div>
 
-      <nav class="sidebar-nav">
-        <a class="nav-item active" onclick="showSection('dashboard')" href="#">
-          <svg viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity=".7" />
-            <rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" />
-            <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" />
-            <rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".7" />
-          </svg>
-          Dashboard
-        </a>
-        <a class="nav-item" onclick="showSection('notes')" href="#">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M4 5h12M4 9h12M4 13h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-          Notatki
-        </a>
-        <a class="nav-item" onclick="showSection('quizzes')" href="#">
-          <svg viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.8" />
-            <path d="M10 6v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-          Quizy
-        </a>
-        <a class="nav-item" onclick="showSection('analytics')" href="#">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M3 15l4-6 4 3 4-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-          Analityka
-        </a>
-      </nav>
-
-      <div class="sidebar-bottom">
-        <div class="realtime-indicator" id="realtime-indicator">
-          <span class="pulse"></span> Realtime DB
-        </div>
-        <div class="remote-config-badge" id="rc-badge">
-          <span>Remote Config</span>
-        </div>
-        <div class="user-chip" id="user-chip">
-          <div class="user-avatar" id="user-avatar">?</div>
-          <div>
-            <p class="user-name" id="user-display-name">Użytkownik</p>
-            <p class="user-email" id="user-display-email">email</p>
-          </div>
-        </div>
-        <button class="btn-logout" onclick="logoutUser()">Wyloguj</button>
-      </div>
-    </aside>
-
-    <!-- SIDEBAR OVERLAY -->
-    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
-
-    <!-- MAIN CONTENT -->
-    <main class="main-content">
-      <!-- MOBILE TOP BAR -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;" class="mobile-topbar">
-        <button class="hamburger" onclick="openSidebar()" aria-label="Menu">
-          <span></span><span></span><span></span>
-        </button>
-      </div>
-
-      <!-- DASHBOARD -->
-      <section id="section-dashboard" class="section active">
-        <div class="section-header">
-          <h1>Dashboard</h1>
-          <span class="header-tag">Firebase Analytics</span>
-        </div>
-        <div class="stats-grid">
-          <div class="stat-card accent-blue">
-            <p class="stat-label">Notatki</p>
-            <p class="stat-value" id="stat-notes">0</p>
-          </div>
-          <div class="stat-card accent-amber">
-            <p class="stat-label">Quizy</p>
-            <p class="stat-value" id="stat-quizzes">0</p>
-          </div>
-          <div class="stat-card accent-green">
-            <p class="stat-label">Rozwiązania</p>
-            <p class="stat-value" id="stat-attempts">0</p>
-          </div>
-          <div class="stat-card accent-coral">
-            <p class="stat-label">Śr. wynik</p>
-            <p class="stat-value" id="stat-avg">—</p>
-          </div>
-        </div>
-
-        <div class="dashboard-grid">
-          <div class="panel">
-            <h3>Ostatnie notatki</h3>
-            <div id="recent-notes-list" class="item-list"></div>
-          </div>
-          <div class="panel">
-            <h3>Aktywność (Realtime DB)</h3>
-            <div id="activity-feed" class="activity-feed"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- NOTES -->
-      <section id="section-notes" class="section">
-        <div class="section-header">
-          <h1>Notatki</h1>
-          <button class="btn-primary sm" onclick="openNoteModal()">+ Nowa notatka</button>
-        </div>
-
-        <div class="notes-toolbar">
-          <div class="search-box">
-            <svg viewBox="0 0 20 20" fill="none">
-              <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.8" />
-              <path d="M13 13l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-            </svg>
-            <input type="text" id="notes-search" placeholder="Szukaj notatek..." oninput="filterNotes()" />
-            <button class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none">✕</button>
-          </div>
-          <div class="sort-box">
-            <select id="notes-sort" onchange="filterNotes()">
-              <option value="date-desc">Najnowsze</option>
-              <option value="date-asc">Najstarsze</option>
-              <option value="alpha-asc">A → Z</option>
-              <option value="alpha-desc">Z → A</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="notes-grid" class="notes-grid"></div>
-        <div id="notes-empty" class="empty-state" style="display:none">
-          <p>Brak notatek. Utwórz pierwszą!</p>
-        </div>
-        <div id="notes-no-results" class="empty-state" style="display:none">
-          <p>Brak wyników dla "<span id="search-query-label"></span>"</p>
-        </div>
-      </section>
-
-      <!-- QUIZZES -->
-      <section id="section-quizzes" class="section">
-        <div class="section-header">
-          <h1>Quizy</h1>
-          <button class="btn-primary sm" onclick="openQuizModal()">+ Nowy quiz</button>
-        </div>
-
-        <div id="quizzes-grid" class="quizzes-grid"></div>
-        <div id="quizzes-empty" class="empty-state" style="display:none">
-          <p>Brak quizów. Utwórz pierwszy!</p>
-        </div>
-      </section>
-
-      <!-- ANALYTICS -->
-      <section id="section-analytics" class="section">
-        <div class="section-header">
-          <h1>Analityka</h1>
-          <span class="header-tag">Firebase Analytics</span>
-        </div>
-        <div class="analytics-info">
-          <div class="analytics-card">
-            <h3>Zdarzenia Firebase Analytics</h3>
-            <p>Aplikacja rejestruje następujące zdarzenia analityczne:</p>
-            <div id="events-log" class="events-log"></div>
-          </div>
-          <div class="analytics-card">
-            <h3>Remote Config – aktywna konfiguracja</h3>
-            <div id="rc-display" class="rc-display"></div>
-          </div>
-        </div>
-      </section>
-
-    </main>
-    <!-- BOTTOM NAV (mobile) -->
-    <nav class="bottom-nav">
-      <div class="bottom-nav-items">
-        <button class="bottom-nav-item active" onclick="showSection('dashboard');setActiveBottomNav(this)">
-          <svg viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity=".7" />
-            <rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" />
-            <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" />
-            <rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".7" />
-          </svg>
-          <span>Dashboard</span>
-        </button>
-        <button class="bottom-nav-item" onclick="showSection('notes');setActiveBottomNav(this)">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M4 5h12M4 9h12M4 13h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-          <span>Notatki</span>
-        </button>
-        <button class="bottom-nav-item" onclick="showSection('quizzes');setActiveBottomNav(this)">
-          <svg viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.8" />
-            <path d="M10 6v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-          <span>Quizy</span>
-        </button>
-        <button class="bottom-nav-item" onclick="showSection('analytics');setActiveBottomNav(this)">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M3 15l4-6 4 3 4-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-          <span>Analityka</span>
-        </button>
-      </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" onclick="showSection('dashboard')" href="#">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity=".7"/><rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".7"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" onclick="showSection('notes')" href="#">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M4 5h12M4 9h12M4 13h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Notatki
+      </a>
+      <a class="nav-item" onclick="showSection('quizzes')" href="#">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M10 6v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Quizy
+      </a>
+      <a class="nav-item" onclick="showSection('analytics')" href="#">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M3 15l4-6 4 3 4-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Analityka
+      </a>
     </nav>
 
-  </div>
+    <div class="sidebar-bottom">
+      <div class="realtime-indicator" id="realtime-indicator">
+        <span class="pulse"></span> Realtime DB
+      </div>
+      <div class="remote-config-badge" id="rc-badge">
+        <span>Remote Config</span>
+      </div>
+      <div class="user-chip" id="user-chip">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div>
+          <p class="user-name" id="user-display-name">Użytkownik</p>
+          <p class="user-email" id="user-display-email">email</p>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logoutUser()">Wyloguj</button>
+    </div>
+  </aside>
 
-  <!-- ═══════════════════════════════════════════════════════
+  <!-- SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- MOBILE TOP BAR -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;" class="mobile-topbar">
+      <button class="hamburger" onclick="openSidebar()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="section-dashboard" class="section active">
+      <div class="section-header">
+        <h1>Dashboard</h1>
+        <span class="header-tag">Firebase Analytics</span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card accent-blue">
+          <p class="stat-label">Notatki</p>
+          <p class="stat-value" id="stat-notes">0</p>
+        </div>
+        <div class="stat-card accent-amber">
+          <p class="stat-label">Quizy</p>
+          <p class="stat-value" id="stat-quizzes">0</p>
+        </div>
+        <div class="stat-card accent-green">
+          <p class="stat-label">Rozwiązania</p>
+          <p class="stat-value" id="stat-attempts">0</p>
+        </div>
+        <div class="stat-card accent-coral">
+          <p class="stat-label">Śr. wynik</p>
+          <p class="stat-value" id="stat-avg">—</p>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="panel">
+          <h3>Ostatnie notatki</h3>
+          <div id="recent-notes-list" class="item-list"></div>
+        </div>
+        <div class="panel">
+          <h3>Aktywność (Realtime DB)</h3>
+          <div id="activity-feed" class="activity-feed"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NOTES -->
+    <section id="section-notes" class="section">
+      <div class="section-header">
+        <h1>Notatki</h1>
+        <button class="btn-primary sm" onclick="openNoteModal()">+ Nowa notatka</button>
+      </div>
+
+      <div class="notes-toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.8"/><path d="M13 13l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <input type="text" id="notes-search" placeholder="Szukaj notatek..." oninput="filterNotes()" />
+          <button class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none">✕</button>
+        </div>
+        <div class="sort-box">
+          <select id="notes-sort" onchange="filterNotes()">
+            <option value="date-desc">Najnowsze</option>
+            <option value="date-asc">Najstarsze</option>
+            <option value="alpha-asc">A → Z</option>
+            <option value="alpha-desc">Z → A</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="notes-grid" class="notes-grid"></div>
+      <div id="notes-empty" class="empty-state" style="display:none">
+        <p>Brak notatek. Utwórz pierwszą!</p>
+      </div>
+      <div id="notes-no-results" class="empty-state" style="display:none">
+        <p>Brak wyników dla "<span id="search-query-label"></span>"</p>
+      </div>
+    </section>
+
+    <!-- QUIZZES -->
+    <section id="section-quizzes" class="section">
+      <div class="section-header">
+        <h1>Quizy</h1>
+        <button class="btn-primary sm" onclick="openQuizModal()">+ Nowy quiz</button>
+      </div>
+
+      <div id="quizzes-grid" class="quizzes-grid"></div>
+      <div id="quizzes-empty" class="empty-state" style="display:none">
+        <p>Brak quizów. Utwórz pierwszy!</p>
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section id="section-analytics" class="section">
+      <div class="section-header">
+        <h1>Analityka</h1>
+        <span class="header-tag">Firebase Analytics</span>
+      </div>
+      <div class="analytics-info">
+        <div class="analytics-card">
+          <h3>Zdarzenia Firebase Analytics</h3>
+          <p>Aplikacja rejestruje następujące zdarzenia analityczne:</p>
+          <div id="events-log" class="events-log"></div>
+        </div>
+        <div class="analytics-card">
+          <h3>Remote Config – aktywna konfiguracja</h3>
+          <div id="rc-display" class="rc-display"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+  <!-- BOTTOM NAV (mobile) -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-items">
+      <button class="bottom-nav-item active" onclick="showSection('dashboard');setActiveBottomNav(this)">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity=".7"/><rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".7"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="bottom-nav-item" onclick="showSection('notes');setActiveBottomNav(this)">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M4 5h12M4 9h12M4 13h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Notatki</span>
+      </button>
+      <button class="bottom-nav-item" onclick="showSection('quizzes');setActiveBottomNav(this)">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M10 6v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Quizy</span>
+      </button>
+      <button class="bottom-nav-item" onclick="showSection('analytics');setActiveBottomNav(this)">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M3 15l4-6 4 3 4-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Analityka</span>
+      </button>
+    </div>
+  </nav>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
      MODALS
 ═══════════════════════════════════════════════════════ -->
 
-  <!-- Note Modal -->
-  <div id="note-modal" class="modal-overlay" style="display:none">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="note-modal-title">Nowa notatka</h2>
-        <button class="modal-close" onclick="closeNoteModal()">✕</button>
-      </div>
-      <div class="field">
-        <label>Tytuł</label>
-        <input type="text" id="note-title-input" placeholder="Np. Wzory matematyczne" />
-      </div>
-      <div class="field">
-        <label>Treść</label>
-        <textarea id="note-content-input" rows="6" placeholder="Tutaj wpisz treść notatki..."></textarea>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-ghost" onclick="closeNoteModal()">Anuluj</button>
-        <button class="btn-primary" onclick="saveNote()">Zapisz</button>
-      </div>
+<!-- Note Modal -->
+<div id="note-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="note-modal-title">Nowa notatka</h2>
+      <button class="modal-close" onclick="closeNoteModal()">✕</button>
+    </div>
+    <div class="field">
+      <label>Tytuł</label>
+      <input type="text" id="note-title-input" placeholder="Np. Wzory matematyczne" />
+    </div>
+    <div class="field">
+      <label>Treść</label>
+      <textarea id="note-content-input" rows="6" placeholder="Tutaj wpisz treść notatki..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeNoteModal()">Anuluj</button>
+      <button class="btn-primary" onclick="saveNote()">Zapisz</button>
     </div>
   </div>
+</div>
 
-  <!-- Quiz Builder Modal -->
-  <div id="quiz-modal" class="modal-overlay" style="display:none">
-    <div class="modal modal-wide">
-      <div class="modal-header">
-        <h2 id="quiz-modal-title">Nowy quiz</h2>
-        <button class="modal-close" onclick="closeQuizModal()">✕</button>
-      </div>
-      <div class="field">
-        <label>Nazwa quizu</label>
-        <input type="text" id="quiz-name-input" placeholder="Np. Matematyka – pochodne" />
-      </div>
-      <div id="questions-builder"></div>
-      <button class="btn-ghost" onclick="addQuestion()">+ Dodaj pytanie</button>
-      <div class="modal-actions">
-        <button class="btn-ghost" onclick="closeQuizModal()">Anuluj</button>
-        <button class="btn-primary" onclick="saveQuiz()">Zapisz quiz</button>
-      </div>
+<!-- Quiz Builder Modal -->
+<div id="quiz-modal" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2 id="quiz-modal-title">Nowy quiz</h2>
+      <button class="modal-close" onclick="closeQuizModal()">✕</button>
+    </div>
+    <div class="field">
+      <label>Nazwa quizu</label>
+      <input type="text" id="quiz-name-input" placeholder="Np. Matematyka – pochodne" />
+    </div>
+    <div id="questions-builder"></div>
+    <button class="btn-ghost" onclick="addQuestion()">+ Dodaj pytanie</button>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeQuizModal()">Anuluj</button>
+      <button class="btn-primary" onclick="saveQuiz()">Zapisz quiz</button>
     </div>
   </div>
+</div>
 
-  <!-- Quiz Player Modal -->
-  <div id="player-modal" class="modal-overlay" style="display:none">
-    <div class="modal modal-wide">
-      <div class="modal-header">
-        <h2 id="player-quiz-name">Quiz</h2>
-        <button class="modal-close" onclick="closePlayer()">✕</button>
-      </div>
-      <div id="player-content"></div>
+<!-- Quiz Player Modal -->
+<div id="player-modal" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2 id="player-quiz-name">Quiz</h2>
+      <button class="modal-close" onclick="closePlayer()">✕</button>
     </div>
+    <div id="player-content"></div>
   </div>
+</div>
 
-  <!-- Toast -->
-  <div id="toast" class="toast"></div>
+<!-- Toast -->
+<div id="toast" class="toast"></div>
 
-  <!-- Firebase SDKs -->
-  <script type="module" src="js/firebase-config.js"></script>
-  <script type="module" src="js/app.js"></script>
+<!-- Firebase SDKs -->
+<script type="module" src="js/firebase-config.js"></script>
+<script type="module" src="js/app.js"></script>
 </body>
-
 </html>
