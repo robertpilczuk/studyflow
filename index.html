@@ -197,7 +197,10 @@
     <section id="section-notes" class="section">
       <div class="section-header">
         <h1>Notatki</h1>
-        <button class="btn-primary sm" onclick="openNoteModal()">+ Nowa notatka</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-ghost" onclick="exportAllNotesPDF()">⬇ Eksport PDF</button>
+          <button class="btn-primary sm" onclick="openNoteModal()">+ Nowa notatka</button>
+        </div>
       </div>
 
       <div class="categories-bar" id="categories-bar"></div>
@@ -231,7 +234,10 @@
     <section id="section-quizzes" class="section">
       <div class="section-header">
         <h1>Quizy</h1>
-        <button class="btn-primary sm" onclick="openQuizModal()">+ Nowy quiz</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-ghost" onclick="openAiModal()">✨ Generuj AI</button>
+          <button class="btn-primary sm" onclick="openQuizModal()">+ Nowy quiz</button>
+        </div>
       </div>
 
       <div class="section-tabs">
@@ -371,8 +377,48 @@
   </div>
 </div>
 
+<!-- AI Quiz Generator Modal -->
+<div id="ai-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>✨ Generuj quiz przez AI</h2>
+      <button class="modal-close" onclick="closeAiModal()">✕</button>
+    </div>
+    <div class="field">
+      <label>Temat quizu</label>
+      <input type="text" id="ai-topic" placeholder="Np. fotosynteza, II wojna światowa, Python..." />
+    </div>
+    <div class="field">
+      <label>Liczba pytań</label>
+      <select id="ai-count">
+        <option value="5">5 pytań</option>
+        <option value="10" selected>10 pytań</option>
+        <option value="15">15 pytań</option>
+        <option value="20">20 pytań</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Poziom trudności</label>
+      <select id="ai-level">
+        <option value="łatwy">Łatwy</option>
+        <option value="średni" selected>Średni</option>
+        <option value="trudny">Trudny</option>
+      </select>
+    </div>
+    <div id="ai-status" class="ai-status" style="display:none"></div>
+    <div id="ai-preview" class="ai-preview" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeAiModal()">Anuluj</button>
+      <button class="btn-primary sm" id="ai-generate-btn" onclick="generateQuizAI()">✨ Generuj</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast" class="toast"></div>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <!-- Firebase SDKs -->
 <script type="module" src="js/firebase-config.js"></script>

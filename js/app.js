@@ -6,6 +6,7 @@
 import {
   auth, db, rtdb, trackEvent, loadRemoteConfig
 } from "./firebase-config.js";
+import { GEMINI_API_KEY } from "./config.js";
 
 import {
   createUserWithEmailAndPassword,
@@ -953,6 +954,205 @@ function renderRemoteConfig() {
   if (badge) badge.title = `Remote Config załadowany: ${entries.length} kluczy`;
 }
 
+
+
+// ─────────────────────────────────────────────────────
+// ✨ AI — GENEROWANIE QUIZÓW (GEMINI API)
+// ─────────────────────────────────────────────────────
+let aiGeneratedQuestions = [];
+
+window.openAiModal = function () {
+  aiGeneratedQuestions = [];
+  document.getElementById("ai-topic").value = "";
+  document.getElementById("ai-count").value = "10";
+  document.getElementById("ai-level").value = "średni";
+  document.getElementById("ai-status").style.display = "none";
+  document.getElementById("ai-preview").style.display = "none";
+  document.getElementById("ai-generate-btn").textContent = "✨ Generuj";
+  document.getElementById("ai-generate-btn").onclick = generateQuizAI;
+  document.getElementById("ai-modal").style.display = "flex";
+};
+window.closeAiModal = () => { document.getElementById("ai-modal").style.display = "none"; };
+
+window.generateQuizAI = async function () {
+  const topic = document.getElementById("ai-topic").value.trim();
+  const count = document.getElementById("ai-count").value;
+  const level = document.getElementById("ai-level").value;
+
+  if (!topic) return showToast("Wpisz temat quizu.", "error");
+
+  const statusEl = document.getElementById("ai-status");
+  const previewEl = document.getElementById("ai-preview");
+  const btn = document.getElementById("ai-generate-btn");
+
+  statusEl.style.display = "flex";
+  statusEl.innerHTML = `<div class="ai-spinner"></div> Gemini generuje ${count} pytań na temat "${topic}"...`;
+  previewEl.style.display = "none";
+  btn.disabled = true;
+
+  const prompt = `Wygeneruj ${count} pytań quizowych na temat "${topic}" na poziomie ${level}.
+Odpowiedz WYŁĄCZNIE w formacie JSON (bez markdown, bez komentarzy):
+{
+  "questions": [
+    {
+      "text": "treść pytania",
+      "options": ["odpowiedź A", "odpowiedź B", "odpowiedź C", "odpowiedź D"],
+      "correct": 0
+    }
+  ]
+}
+Gdzie "correct" to indeks (0-3) poprawnej odpowiedzi. Pytania i odpowiedzi pisz po polsku.`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+        })
+      }
+    );
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+    aiGeneratedQuestions = parsed.questions;
+
+    // Pokaż podgląd
+    statusEl.innerHTML = `✓ Wygenerowano ${aiGeneratedQuestions.length} pytań. Sprawdź podgląd:`;
+    previewEl.style.display = "";
+    previewEl.innerHTML = aiGeneratedQuestions.map((q, i) => `
+      <div class="ai-preview-question">
+        <p class="ai-preview-q">${i + 1}. ${esc(q.text)}</p>
+        <div class="ai-preview-opts">
+          ${q.options.map((o, j) => `
+            <span class="ai-preview-opt ${j === q.correct ? "correct" : ""}">
+              ${["A", "B", "C", "D"][j]}. ${esc(o)}${j === q.correct ? " ✓" : ""}
+            </span>
+          `).join("")}
+        </div>
+      </div>
+    `).join("");
+
+    btn.disabled = false;
+    btn.textContent = "💾 Zapisz quiz";
+    btn.onclick = saveAiQuiz;
+    trackAnalytics("ai_quiz_generated", { topic, count: aiGeneratedQuestions.length });
+
+  } catch (e) {
+    statusEl.innerHTML = `✕ Błąd: ${e.message}`;
+    btn.disabled = false;
+    console.error("Gemini error:", e);
+  }
+};
+
+window.saveAiQuiz = async function () {
+  const topic = document.getElementById("ai-topic").value.trim();
+  if (!aiGeneratedQuestions.length) return;
+
+  await addDoc(collection(db, "quizzes"), {
+    uid: currentUser.uid,
+    name: `AI: ${topic}`,
+    questions: aiGeneratedQuestions,
+    timePerQuestion: 0,
+    createdAt: serverTimestamp(),
+    generatedByAI: true
+  });
+  await updateDoc(doc(db, "users", currentUser.uid), { quizzesCount: increment(1) });
+  pushActivity(`Wygenerowano quiz AI: ${topic}`);
+  trackAnalytics("ai_quiz_saved", { topic });
+  closeAiModal();
+  loadQuizzes();
+  loadDashboard();
+  showToast(`Quiz "AI: ${topic}" zapisany!`, "success");
+};
+
+// ─────────────────────────────────────────────────────
+// ⬇ EKSPORT NOTATEK DO PDF (jsPDF — CDN)
+// ─────────────────────────────────────────────────────
+window.exportAllNotesPDF = function () {
+  if (!allNotes.length) return showToast("Brak notatek do eksportu.", "error");
+
+  const { jsPDF } = window.jspdf;
+  if (!jsPDF) return showToast("Błąd ładowania biblioteki PDF.", "error");
+
+  const pdf = new jsPDF({ unit: "mm", format: "a4" });
+  const margin = 15;
+  const pageW = 210;
+  const maxW = pageW - margin * 2;
+  let y = margin;
+
+  // Tytuł dokumentu
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(20);
+  pdf.setTextColor(30, 30, 30);
+  pdf.text("StudyFlow — Moje notatki", margin, y);
+  y += 8;
+
+  pdf.setFontSize(9);
+  pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(120, 120, 120);
+  pdf.text(`Wygenerowano: ${new Date().toLocaleDateString("pl-PL")} · ${allNotes.length} notatek`, margin, y);
+  y += 10;
+
+  // Linia
+  pdf.setDrawColor(200, 200, 200);
+  pdf.line(margin, y, pageW - margin, y);
+  y += 8;
+
+  allNotes.forEach((note, idx) => {
+    // Sprawdź czy trzeba nową stronę
+    if (y > 260) { pdf.addPage(); y = margin; }
+
+    // Kategoria
+    if (note.category) {
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(100, 80, 200);
+      pdf.text(`[${note.category}]`, margin, y);
+      y += 5;
+    }
+
+    // Tytuł notatki
+    pdf.setFontSize(13);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(30, 30, 30);
+    pdf.text(note.title, margin, y);
+    y += 6;
+
+    // Treść
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(60, 60, 60);
+    const lines = pdf.splitTextToSize(note.content || "", maxW);
+    lines.forEach(line => {
+      if (y > 270) { pdf.addPage(); y = margin; }
+      pdf.text(line, margin, y);
+      y += 5;
+    });
+
+    // Data i separator
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text(formatDate(note.createdAt), margin, y);
+    y += 5;
+
+    if (idx < allNotes.length - 1) {
+      pdf.setDrawColor(230, 230, 230);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 6;
+    }
+  });
+
+  pdf.save(`StudyFlow_Notatki_${new Date().toISOString().slice(0, 10)}.pdf`);
+  trackAnalytics("notes_exported_pdf", { count: allNotes.length });
+  showToast(`Wyeksportowano ${allNotes.length} notatek do PDF!`, "success");
+};
 
 // ─────────────────────────────────────────────────────
 // HISTORIA WYNIKÓW
