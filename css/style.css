@@ -1176,6 +1176,272 @@ body {
   background: var(--border);
 }
 
+/* ── SECTION TABS ── */
+.section-tabs {
+  display      : flex;
+  gap          : 0;
+  background   : var(--bg-3);
+  border-radius: var(--radius-sm);
+  padding      : 3px;
+  margin-bottom: 1.25rem;
+  width        : fit-content;
+}
+
+.section-tab {
+  padding      : 7px 18px;
+  border       : none;
+  background   : transparent;
+  color        : var(--text-2);
+  font-family  : var(--font-body);
+  font-size    : 13px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor       : pointer;
+  transition   : all var(--transition);
+}
+
+.section-tab.active {
+  background: var(--bg-2);
+  color     : var(--text);
+  border    : 1px solid var(--border-mid);
+}
+
+/* ── CATEGORIES BAR ── */
+.categories-bar {
+  display      : flex;
+  gap          : 6px;
+  flex-wrap    : wrap;
+  margin-bottom: 0.75rem;
+}
+
+.category-chip {
+  padding      : 4px 12px;
+  background   : var(--bg-3);
+  border       : 1px solid var(--border);
+  border-radius: 20px;
+  font-size    : 12px;
+  color        : var(--text-2);
+  cursor       : pointer;
+  transition   : all var(--transition);
+  font-family  : var(--font-mono);
+}
+
+.category-chip:hover {
+  border-color: var(--accent-blue);
+  color       : var(--accent-blue);
+}
+
+.category-chip.active {
+  background  : rgba(59, 130, 246, 0.1);
+  border-color: var(--accent-blue);
+  color       : var(--accent-blue);
+}
+
+/* ── NOTE CATEGORY BADGE ── */
+.note-category-badge {
+  display      : inline-block;
+  padding      : 2px 8px;
+  background   : rgba(167, 139, 250, 0.1);
+  border       : 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 20px;
+  font-size    : 10px;
+  color        : var(--accent-purple);
+  font-family  : var(--font-mono);
+  margin-bottom: 6px;
+}
+
+/* ── RESULTS ── */
+.results-chart {
+  background   : var(--bg-2);
+  border       : 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding      : 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.results-chart h3 {
+  font-family  : var(--font-head);
+  font-size    : 15px;
+  font-weight  : 600;
+  margin-bottom: 1rem;
+  color        : var(--text);
+}
+
+.chart-bars {
+  display    : flex;
+  align-items: flex-end;
+  gap        : 8px;
+  height     : 120px;
+}
+
+.chart-bar-wrap {
+  display        : flex;
+  flex-direction : column;
+  align-items    : center;
+  gap            : 4px;
+  flex           : 1;
+  min-width      : 0;
+  height         : 100%;
+  justify-content: flex-end;
+}
+
+.chart-bar {
+  width        : 100%;
+  border-radius: 4px 4px 0 0;
+  background   : var(--accent-blue);
+  transition   : height 0.4s ease;
+  min-height   : 4px;
+  position     : relative;
+  cursor       : pointer;
+}
+
+.chart-bar:hover {
+  opacity: 0.8;
+}
+
+.chart-bar.high {
+  background: var(--accent-green);
+}
+
+.chart-bar.mid {
+  background: var(--accent-amber);
+}
+
+.chart-bar.low {
+  background: var(--accent-coral);
+}
+
+.chart-bar-label {
+  font-size    : 9px;
+  color        : var(--text-3);
+  font-family  : var(--font-mono);
+  text-align   : center;
+  white-space  : nowrap;
+  overflow     : hidden;
+  text-overflow: ellipsis;
+  width        : 100%;
+}
+
+.chart-bar-value {
+  font-size  : 10px;
+  color      : var(--text-2);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.results-list {
+  display       : flex;
+  flex-direction: column;
+  gap           : 8px;
+}
+
+.result-row {
+  display      : flex;
+  align-items  : center;
+  gap          : 12px;
+  padding      : 10px 14px;
+  background   : var(--bg-2);
+  border       : 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.result-score {
+  font-family: var(--font-head);
+  font-size  : 20px;
+  font-weight: 700;
+  min-width  : 52px;
+  text-align : center;
+}
+
+.result-score.high {
+  color: var(--accent-green);
+}
+
+.result-score.mid {
+  color: var(--accent-amber);
+}
+
+.result-score.low {
+  color: var(--accent-coral);
+}
+
+.result-info {
+  flex     : 1;
+  min-width: 0;
+}
+
+.result-name {
+  font-size    : 13px;
+  font-weight  : 500;
+  color        : var(--text);
+  overflow     : hidden;
+  text-overflow: ellipsis;
+  white-space  : nowrap;
+}
+
+.result-meta {
+  font-size  : 11px;
+  color      : var(--text-3);
+  font-family: var(--font-mono);
+}
+
+/* ── TIMER ── */
+.quiz-timer {
+  display        : flex;
+  align-items    : center;
+  justify-content: center;
+  gap            : 8px;
+  margin-bottom  : 1rem;
+  font-family    : var(--font-mono);
+  font-size      : 13px;
+  color          : var(--text-2);
+}
+
+.timer-circle {
+  width          : 40px;
+  height         : 40px;
+  border-radius  : 50%;
+  background     : var(--bg-3);
+  border         : 2px solid var(--accent-blue);
+  display        : flex;
+  align-items    : center;
+  justify-content: center;
+  font-size      : 14px;
+  font-weight    : 700;
+  color          : var(--accent-blue);
+  transition     : border-color 0.3s, color 0.3s;
+}
+
+.timer-circle.warning {
+  border-color: var(--accent-amber);
+  color       : var(--accent-amber);
+}
+
+.timer-circle.danger {
+  border-color: var(--accent-coral);
+  color       : var(--accent-coral);
+}
+
+/* ── OFFLINE BADGE ── */
+.offline-banner {
+  display    : none;
+  position   : fixed;
+  top        : 0;
+  left       : 0;
+  right      : 0;
+  background : var(--accent-amber);
+  color      : #000;
+  text-align : center;
+  padding    : 8px;
+  font-size  : 12px;
+  font-weight: 600;
+  z-index    : 9999;
+  font-family: var(--font-mono);
+}
+
+.offline-banner.show {
+  display: block;
+}
+
 /* ── NOTES TOOLBAR ── */
 .notes-toolbar {
   display      : flex;

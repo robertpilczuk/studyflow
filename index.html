@@ -10,6 +10,9 @@
 </head>
 <body>
 
+<!-- OFFLINE BANNER -->
+<div id="offline-banner" class="offline-banner">⚠ Brak połączenia z internetem — dane mogą być nieaktualne</div>
+
 <!-- ═══════════════════════════════════════════════════════
      AUTH SCREEN
 ═══════════════════════════════════════════════════════ -->
@@ -197,6 +200,8 @@
         <button class="btn-primary sm" onclick="openNoteModal()">+ Nowa notatka</button>
       </div>
 
+      <div class="categories-bar" id="categories-bar"></div>
+
       <div class="notes-toolbar">
         <div class="search-box">
           <svg viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.8"/><path d="M13 13l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -229,9 +234,24 @@
         <button class="btn-primary sm" onclick="openQuizModal()">+ Nowy quiz</button>
       </div>
 
-      <div id="quizzes-grid" class="quizzes-grid"></div>
-      <div id="quizzes-empty" class="empty-state" style="display:none">
-        <p>Brak quizów. Utwórz pierwszy!</p>
+      <div class="section-tabs">
+        <button class="section-tab active" id="tab-quizzes" onclick="switchQuizTab('quizzes')">Moje quizy</button>
+        <button class="section-tab" id="tab-results" onclick="switchQuizTab('results')">Historia wyników</button>
+      </div>
+
+      <div id="quizzes-tab-content">
+        <div id="quizzes-grid" class="quizzes-grid"></div>
+        <div id="quizzes-empty" class="empty-state" style="display:none">
+          <p>Brak quizów. Utwórz pierwszy!</p>
+        </div>
+      </div>
+
+      <div id="results-tab-content" style="display:none">
+        <div id="results-chart" class="results-chart"></div>
+        <div id="results-list" class="results-list"></div>
+        <div id="results-empty" class="empty-state" style="display:none">
+          <p>Brak wyników. Rozwiąż swój pierwszy quiz!</p>
+        </div>
       </div>
     </section>
 
@@ -295,8 +315,13 @@
       <input type="text" id="note-title-input" placeholder="Np. Wzory matematyczne" />
     </div>
     <div class="field">
+      <label>Kategoria (opcjonalnie)</label>
+      <input type="text" id="note-category-input" placeholder="Np. Matematyka, Historia..." list="categories-list" />
+      <datalist id="categories-list"></datalist>
+    </div>
+    <div class="field">
       <label>Treść</label>
-      <textarea id="note-content-input" rows="6" placeholder="Tutaj wpisz treść notatki..."></textarea>
+      <textarea id="note-content-input" rows="5" placeholder="Tutaj wpisz treść notatki..."></textarea>
     </div>
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeNoteModal()">Anuluj</button>
@@ -315,6 +340,16 @@
     <div class="field">
       <label>Nazwa quizu</label>
       <input type="text" id="quiz-name-input" placeholder="Np. Matematyka – pochodne" />
+    </div>
+    <div class="field">
+      <label>Limit czasu na pytanie</label>
+      <select id="quiz-timer-input">
+        <option value="0">Bez limitu</option>
+        <option value="15">15 sekund</option>
+        <option value="30">30 sekund</option>
+        <option value="60">60 sekund</option>
+        <option value="90">90 sekund</option>
+      </select>
     </div>
     <div id="questions-builder"></div>
     <button class="btn-ghost" onclick="addQuestion()">+ Dodaj pytanie</button>

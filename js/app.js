@@ -41,6 +41,8 @@ let playerState = {};          // stan quiz playera
 let analyticsEvents = [];
 let firestoreUnsub = null;
 let allNotes = [];          // cache notatek do wyszukiwania
+let activeCategory = null;  // aktywna kategoria filtra
+let timerInterval = null;  // interval timera quizu
 
 // ─────────────────────────────────────────────────────
 // BOOTSTRAP — inicjalizacja po załadowaniu strony
@@ -262,6 +264,7 @@ function showApp() {
   initRealtimeDB();
   loadDashboard();
   showSection("dashboard");
+  initOfflineDetection();
 }
 
 window.showSection = function (name) {
@@ -272,11 +275,18 @@ window.showSection = function (name) {
     if (n.getAttribute("onclick")?.includes(name)) n.classList.add("active");
   });
 
-  if (name === "notes") loadNotes();
-  if (name === "quizzes") loadQuizzes();
+  if (name === "notes") { loadNotes(); }
+  if (name === "quizzes") { loadQuizzes(); loadResults(); }
   if (name === "analytics") renderAnalyticsSection();
 
   trackAnalytics("page_view", { page: name });
+};
+
+window.switchQuizTab = function (tab) {
+  document.getElementById("tab-quizzes").classList.toggle("active", tab === "quizzes");
+  document.getElementById("tab-results").classList.toggle("active", tab === "results");
+  document.getElementById("quizzes-tab-content").style.display = tab === "quizzes" ? "" : "none";
+  document.getElementById("results-tab-content").style.display = tab === "results" ? "" : "none";
 };
 
 // ─────────────────────────────────────────────────────
@@ -356,6 +366,11 @@ async function loadDashboard() {
 // ─────────────────────────────────────────────────────
 // WYSZUKIWARKA I SORTOWANIE NOTATEK
 // ─────────────────────────────────────────────────────
+window.setCategory = function (cat) {
+  activeCategory = cat;
+  filterNotes();
+};
+
 window.filterNotes = function () {
   const query = document.getElementById("notes-search").value.trim().toLowerCase();
   const sort = document.getElementById("notes-sort").value;
@@ -366,7 +381,12 @@ window.filterNotes = function () {
 
   let filtered = [...allNotes];
 
-  // Filtrowanie
+  // Filtrowanie po kategorii
+  if (activeCategory) {
+    filtered = filtered.filter(n => n.category === activeCategory);
+  }
+
+  // Filtrowanie po wyszukiwarce
   if (query) {
     filtered = filtered.filter(n =>
       n.title.toLowerCase().includes(query) ||
@@ -437,14 +457,29 @@ function renderNotes(notes) {
   }
   empty.style.display = "none";
 
+  // Aktualizuj datalist kategorii
+  const cats = [...new Set(notes.map(n => n.category).filter(Boolean))];
+  const dl = document.getElementById("categories-list");
+  if (dl) dl.innerHTML = cats.map(c => `<option value="${esc(c)}">`).join("");
+
+  // Renderuj chipsy kategorii
+  const bar = document.getElementById("categories-bar");
+  if (bar) {
+    bar.innerHTML = cats.length ? [
+      `<span class="category-chip ${!activeCategory ? 'active' : ''}" onclick="setCategory(null)">Wszystkie</span>`,
+      ...cats.map(c => `<span class="category-chip ${activeCategory === c ? 'active' : ''}" onclick="setCategory('${esc(c)}')">${esc(c)}</span>`)
+    ].join("") : "";
+  }
+
   grid.innerHTML = notes.map(n => `
     <div class="note-card">
+      ${n.category ? `<span class="note-category-badge">${esc(n.category)}</span>` : ""}
       <p class="note-card-title">${esc(n.title)}</p>
       <p class="note-card-content">${esc(n.content)}</p>
       <div class="note-card-footer">
         <span class="note-card-date">${formatDate(n.createdAt)}</span>
         <div class="note-card-actions">
-          <button class="icon-btn edit" title="Edytuj" onclick="editNote('${n.id}','${esc(n.title)}','${esc(n.content).replace(/'/g, "&#39;")}')">✏</button>
+          <button class="icon-btn edit" title="Edytuj" onclick="editNote('${n.id}','${esc(n.title)}','${esc(n.content).replace(/'/g, "&#39;")}','${esc(n.category || "")}')">✏</button>
           <button class="icon-btn" title="Usuń" onclick="deleteNote('${n.id}')">✕</button>
         </div>
       </div>
@@ -457,21 +492,24 @@ window.openNoteModal = function () {
   document.getElementById("note-modal-title").textContent = "Nowa notatka";
   document.getElementById("note-title-input").value = "";
   document.getElementById("note-content-input").value = "";
+  document.getElementById("note-category-input").value = "";
   document.getElementById("note-modal").style.display = "flex";
 };
 window.closeNoteModal = () => { document.getElementById("note-modal").style.display = "none"; };
 
-window.editNote = function (id, title, content) {
+window.editNote = function (id, title, content, category) {
   editingNoteId = id;
   document.getElementById("note-modal-title").textContent = "Edytuj notatkę";
   document.getElementById("note-title-input").value = title;
   document.getElementById("note-content-input").value = content;
+  document.getElementById("note-category-input").value = category || "";
   document.getElementById("note-modal").style.display = "flex";
 };
 
 window.saveNote = async function () {
   const title = document.getElementById("note-title-input").value.trim();
-  const content = document.getElementById("note-content-input").value.trim();
+  const noteContent = document.getElementById("note-content-input").value.trim();
+  const category = document.getElementById("note-category-input").value.trim();
   if (!title) return showToast("Wpisz tytuł notatki.", "error");
 
   // Remote Config — limit notatek
@@ -482,17 +520,17 @@ window.saveNote = async function () {
   }
 
   if (editingNoteId) {
-    await updateDoc(doc(db, "notes", editingNoteId), { title, content, updatedAt: serverTimestamp() });
+    await updateDoc(doc(db, "notes", editingNoteId), { title, content: noteContent, category, updatedAt: serverTimestamp() });
     pushActivity(`Edytowano notatkę: ${title}`);
     trackAnalytics("note_updated", { title });
     showToast("Notatka zaktualizowana!", "success");
   } else {
     await addDoc(collection(db, "notes"), {
-      uid: currentUser.uid, title, content, createdAt: serverTimestamp()
+      uid: currentUser.uid, title, content: noteContent, category, createdAt: serverTimestamp()
     });
     await updateDoc(doc(db, "users", currentUser.uid), { notesCount: increment(1) });
     pushActivity(`Dodano notatkę: ${title}`);
-    trackAnalytics("note_created", { title });
+    trackAnalytics("note_created", { title, category });
     showToast("Notatka zapisana!", "success");
   }
 
@@ -558,6 +596,7 @@ window.openQuizModal = function () {
   document.getElementById("quiz-name-input").value = "";
   document.getElementById("questions-builder").innerHTML = "";
   document.getElementById("quiz-modal-title").textContent = "Nowy quiz";
+  document.getElementById("quiz-timer-input").value = "0";
   addQuestion();
   document.getElementById("quiz-modal").style.display = "flex";
 };
@@ -637,6 +676,7 @@ window.editQuiz = async function (id) {
   quizQuestions = [];
 
   document.getElementById("quiz-name-input").value = quiz.name;
+  document.getElementById("quiz-timer-input").value = quiz.timePerQuestion || 0;
   document.getElementById("questions-builder").innerHTML = "";
   document.getElementById("quiz-modal-title").textContent = "Edytuj quiz";
 
@@ -704,14 +744,16 @@ window.saveQuiz = async function () {
   const valid = quizQuestions.filter(q => q.text.trim() && q.options.every(o => o.trim()));
   if (!valid.length) return showToast("Dodaj co najmniej jedno kompletne pytanie.", "error");
 
+  const timePerQuestion = parseInt(document.getElementById("quiz-timer-input").value) || 0;
+
   if (editingQuizId) {
-    await updateDoc(doc(db, "quizzes", editingQuizId), { name, questions: valid, updatedAt: serverTimestamp() });
+    await updateDoc(doc(db, "quizzes", editingQuizId), { name, questions: valid, timePerQuestion, updatedAt: serverTimestamp() });
     pushActivity(`Edytowano quiz: ${name}`);
     trackAnalytics("quiz_updated", { name });
     showToast("Quiz zaktualizowany!", "success");
   } else {
     await addDoc(collection(db, "quizzes"), {
-      uid: currentUser.uid, name, questions: valid, createdAt: serverTimestamp()
+      uid: currentUser.uid, name, questions: valid, timePerQuestion, createdAt: serverTimestamp()
     });
     await updateDoc(doc(db, "users", currentUser.uid), { quizzesCount: increment(1) });
     pushActivity(`Utworzono quiz: ${name}`);
@@ -740,7 +782,8 @@ window.startQuiz = async function (quizId) {
   if (!snap.exists()) return;
   const quiz = { id: snap.id, ...snap.data() };
 
-  playerState = { quiz, current: 0, answers: {}, score: 0, done: false };
+  if (timerInterval) clearInterval(timerInterval);
+  playerState = { quiz, current: 0, answers: {}, score: 0, done: false, timeLeft: quiz.timePerQuestion || 0 };
   document.getElementById("player-quiz-name").textContent = quiz.name;
   document.getElementById("player-modal").style.display = "flex";
   trackAnalytics("quiz_started", { quiz_name: quiz.name });
@@ -770,12 +813,14 @@ function renderPlayerQuestion() {
     return;
   }
 
+  const timeLimit = playerState.quiz.timePerQuestion || 0;
   content.innerHTML = `
     <div class="player-progress">
       <span>${current + 1}</span>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       <span>${total}</span>
     </div>
+    ${timeLimit ? `<div class="quiz-timer"><div class="timer-circle" id="timer-circle">${timeLimit}</div><span>sekund na odpowiedź</span></div>` : ""}
     <div class="player-question">
       <p class="player-q-text">${esc(q.text)}</p>
       <div class="player-options" id="player-options">
@@ -793,10 +838,28 @@ function renderPlayerQuestion() {
       </button>
     </div>
   `;
+
+  // Uruchom timer jeśli ustawiony
+  if (timerInterval) clearInterval(timerInterval);
+  if (timeLimit) {
+    playerState.timeLeft = timeLimit;
+    timerInterval = setInterval(() => {
+      playerState.timeLeft--;
+      const circle = document.getElementById("timer-circle");
+      if (!circle) { clearInterval(timerInterval); return; }
+      circle.textContent = playerState.timeLeft;
+      circle.className = "timer-circle" + (playerState.timeLeft <= 5 ? " danger" : playerState.timeLeft <= 10 ? " warning" : "");
+      if (playerState.timeLeft <= 0) {
+        clearInterval(timerInterval);
+        selectAnswer(-1); // brak odpowiedzi = błędna
+      }
+    }, 1000);
+  }
 }
 
 window.selectAnswer = function (idx) {
   if (playerState.answers[playerState.current] !== undefined) return;
+  if (timerInterval) clearInterval(timerInterval);
   playerState.answers[playerState.current] = idx;
   const q = playerState.quiz.questions[playerState.current];
   const correct = q.correct;
@@ -845,7 +908,7 @@ async function finishQuiz() {
   loadDashboard();
 }
 
-window.closePlayer = () => { document.getElementById("player-modal").style.display = "none"; };
+window.closePlayer = () => { if (timerInterval) clearInterval(timerInterval); document.getElementById("player-modal").style.display = "none"; };
 
 // ─────────────────────────────────────────────────────
 // 5️⃣  ANALYTICS LOG (UI)
@@ -888,6 +951,94 @@ function renderRemoteConfig() {
 
   const badge = document.getElementById("rc-badge");
   if (badge) badge.title = `Remote Config załadowany: ${entries.length} kluczy`;
+}
+
+
+// ─────────────────────────────────────────────────────
+// HISTORIA WYNIKÓW
+// ─────────────────────────────────────────────────────
+async function loadResults() {
+  const q = query(
+    collection(db, "results"),
+    where("uid", "==", currentUser.uid),
+    orderBy("createdAt", "desc")
+  );
+  try {
+    const snap = await getDocs(q);
+    const results = [];
+    snap.forEach(d => results.push({ id: d.id, ...d.data() }));
+    renderResults(results);
+  } catch (e) {
+    console.warn("Results index not ready:", e.message);
+  }
+}
+
+function scoreClass(pct) {
+  if (pct >= 80) return "high";
+  if (pct >= 50) return "mid";
+  return "low";
+}
+
+function renderResults(results) {
+  const chartEl = document.getElementById("results-chart");
+  const listEl = document.getElementById("results-list");
+  const emptyEl = document.getElementById("results-empty");
+  if (!chartEl) return;
+
+  if (!results.length) {
+    chartEl.style.display = "none";
+    listEl.innerHTML = "";
+    emptyEl.style.display = "";
+    return;
+  }
+  emptyEl.style.display = "none";
+  chartEl.style.display = "";
+
+  // Wykres — ostatnie 10 wyników (od najstarszego)
+  const chartData = [...results].reverse().slice(-10);
+  chartEl.innerHTML = `
+    <h3>Ostatnie wyniki</h3>
+    <div class="chart-bars">
+      ${chartData.map(r => `
+        <div class="chart-bar-wrap">
+          <div class="chart-bar-value">${r.pct}%</div>
+          <div class="chart-bar ${scoreClass(r.pct)}" style="height:${Math.max(r.pct, 4)}%" title="${esc(r.quizName)}: ${r.pct}%"></div>
+          <div class="chart-bar-label">${esc(r.quizName)}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  // Lista wyników
+  listEl.innerHTML = results.map(r => `
+    <div class="result-row">
+      <div class="result-score ${scoreClass(r.pct)}">${r.pct}%</div>
+      <div class="result-info">
+        <p class="result-name">${esc(r.quizName)}</p>
+        <p class="result-meta">${r.score} z ${r.total} poprawnych · ${formatDate(r.createdAt)}</p>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ─────────────────────────────────────────────────────
+// TRYB OFFLINE
+// ─────────────────────────────────────────────────────
+function initOfflineDetection() {
+  const banner = document.getElementById("offline-banner");
+  if (!banner) return;
+
+  function updateStatus() {
+    if (navigator.onLine) {
+      banner.classList.remove("show");
+    } else {
+      banner.classList.add("show");
+    }
+  }
+
+  window.addEventListener("online", updateStatus);
+  window.addEventListener("offline", updateStatus);
+  updateStatus();
 }
 
 // ─────────────────────────────────────────────────────
