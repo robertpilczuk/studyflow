@@ -14,7 +14,9 @@ import {
   onAuthStateChanged,
   updateProfile,
   sendEmailVerification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 import {
@@ -170,6 +172,37 @@ window.resetPassword = async function () {
   } catch (e) {
     errEl.style.color = "#ef4444";
     errEl.textContent = translateAuthError(e.code);
+  }
+};
+
+
+window.loginWithGoogle = async function () {
+  const errEl = document.getElementById("auth-error");
+  errEl.textContent = "";
+  errEl.style.color = "#ef4444";
+
+  try {
+    const provider = new GoogleAuthProvider();
+    const cred = await signInWithPopup(auth, provider);
+    const user = cred.user;
+
+    // Utwórz profil w Firestore jeśli to pierwsze logowanie
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        name: user.displayName || "Użytkownik",
+        email: user.email,
+        createdAt: serverTimestamp(),
+        notesCount: 0, quizzesCount: 0, attempts: 0, totalScore: 0
+      });
+    }
+
+    trackAnalytics("login", { method: "google" });
+  } catch (e) {
+    if (e.code !== "auth/popup-closed-by-user") {
+      errEl.textContent = translateAuthError(e.code);
+    }
   }
 };
 
