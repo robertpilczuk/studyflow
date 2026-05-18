@@ -84,6 +84,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 // EMAIL VERIFICATION
 // ─────────────────────────────────────────────────────
 function showVerificationScreen() {
+  document.getElementById("loading-screen").style.display = "none";
   document.getElementById("auth-screen").style.display = "none";
   document.getElementById("app").style.display = "none";
   document.getElementById("verification-screen").style.display = "flex";
@@ -240,11 +241,13 @@ function translateAuthError(code) {
 // UI TRANSITIONS
 // ─────────────────────────────────────────────────────
 function showAuth() {
+  document.getElementById("loading-screen").style.display = "none";
   document.getElementById("auth-screen").style.display = "";
   document.getElementById("app").style.display = "none";
 }
 
 function showApp() {
+  document.getElementById("loading-screen").style.display = "none";
   // Sprawdź weryfikację e-mail (pomijaj na localhost)
   const isDev = window.location.hostname === "127.0.0.1" ||
     window.location.hostname === "localhost";
@@ -1289,6 +1292,7 @@ function checkPublicQuizUrl() {
 }
 
 async function loadPublicQuiz(quizId) {
+  document.getElementById("loading-screen").style.display = "none";
   const el = document.getElementById("public-quiz-content");
   el.innerHTML = `<p style="color:var(--text-2);text-align:center;padding:2rem">Ładowanie quizu...</p>`;
 
