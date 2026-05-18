@@ -13,7 +13,8 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
-  sendEmailVerification
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 import {
@@ -154,6 +155,24 @@ async function loginUser() {
   }
 }
 window.loginUser = loginUser;
+
+window.resetPassword = async function () {
+  const email = document.getElementById("login-email").value.trim();
+  const errEl = document.getElementById("auth-error");
+  errEl.textContent = "";
+
+  if (!email) return errEl.textContent = "Wpisz adres e-mail powyżej.";
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    errEl.style.color = "var(--accent-green)";
+    errEl.textContent = "Link do resetowania hasła został wysłany na " + email;
+  } catch (e) {
+    errEl.style.color = "#ef4444";
+    errEl.textContent = translateAuthError(e.code);
+  }
+};
+
 
 async function logoutUser() {
   trackAnalytics("logout", {});
