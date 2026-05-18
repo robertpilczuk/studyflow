@@ -68,7 +68,13 @@ window.addEventListener("DOMContentLoaded", async () => {
       showApp();
     } else {
       currentUser = null;
-      showAuth();
+      // Sprawdź czy URL zawiera publiczny quiz
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("quiz")) {
+        checkPublicQuizUrl();
+      } else {
+        showAuth();
+      }
     }
   });
 });
@@ -577,11 +583,15 @@ function renderQuizzes(quizzes) {
     <div class="quiz-card">
       <div class="quiz-card-header">
         <p class="quiz-card-title">${esc(q.name)}</p>
-        <span class="quiz-badge">${q.questions.length} pytań</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${q.public ? '<span class="quiz-public-badge">🔗 Publiczny</span>' : ''}
+          <span class="quiz-badge">${q.questions.length} pytań</span>
+        </div>
       </div>
       <p class="quiz-card-meta">Utworzono: ${formatDate(q.createdAt)}</p>
       <div class="quiz-card-actions">
         <button class="btn-primary sm" onclick="startQuiz('${q.id}')">Rozwiąż</button>
+        <button class="btn-ghost" onclick="shareQuiz('${q.id}','${esc(q.name)}',${!!q.public})">${q.public ? "🔗 Link" : "Udostępnij"}</button>
         <button class="btn-ghost" onclick="editQuiz('${q.id}')">Edytuj</button>
         <button class="btn-ghost" onclick="deleteQuiz('${q.id}')">Usuń</button>
       </div>
@@ -1062,7 +1072,7 @@ Gdzie "correct" to indeks (0-3) poprawnej odpowiedzi. Pytania i odpowiedzi pisz 
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1210,6 +1220,132 @@ window.exportAllNotesPDF = function () {
   pdf.save(`StudyFlow_Notatki_${new Date().toISOString().slice(0, 10)}.pdf`);
   trackAnalytics("notes_exported_pdf", { count: allNotes.length });
   showToast(`Wyeksportowano ${allNotes.length} notatek do PDF!`, "success");
+};
+
+
+// ─────────────────────────────────────────────────────
+// 🔗 WSPÓŁDZIELENIE QUIZÓW
+// ─────────────────────────────────────────────────────
+window.shareQuiz = async function (id, name, isPublic) {
+  if (!isPublic) {
+    // Ustaw quiz jako publiczny
+    await updateDoc(doc(db, "quizzes", id), { public: true });
+    pushActivity(`Udostępniono quiz: ${name}`);
+    trackAnalytics("quiz_shared", { name });
+    showToast("Quiz jest teraz publiczny!", "success");
+  }
+
+  const url = `${window.location.origin}${window.location.pathname}?quiz=${id}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast("Link skopiowany do schowka! 🔗", "success");
+  } catch (e) {
+    prompt("Skopiuj link:", url);
+  }
+  loadQuizzes();
+};
+
+// Sprawdź czy URL zawiera ?quiz=ID (widok publiczny)
+function checkPublicQuizUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const quizId = params.get("quiz");
+  if (!quizId) return;
+
+  // Pokaż publiczny player nawet bez logowania
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("public-quiz-screen").style.display = "flex";
+  loadPublicQuiz(quizId);
+}
+
+async function loadPublicQuiz(quizId) {
+  const el = document.getElementById("public-quiz-content");
+  el.innerHTML = `<p style="color:var(--text-2);text-align:center;padding:2rem">Ładowanie quizu...</p>`;
+
+  try {
+    const snap = await getDoc(doc(db, "quizzes", quizId));
+    if (!snap.exists() || !snap.data().public) {
+      el.innerHTML = `<p style="color:#ef4444;text-align:center;padding:2rem">Quiz nie istnieje lub nie jest publiczny.</p>`;
+      return;
+    }
+    const quiz = { id: snap.id, ...snap.data() };
+    document.getElementById("public-quiz-title").textContent = quiz.name;
+
+    // Uruchom player w trybie publicznym
+    playerState = { quiz, current: 0, answers: {}, score: 0, done: false, timeLeft: quiz.timePerQuestion || 0, isPublic: true };
+    renderPublicQuestion();
+  } catch (e) {
+    el.innerHTML = `<p style="color:#ef4444;text-align:center;padding:2rem">Błąd: ${e.message}</p>`;
+  }
+}
+
+function renderPublicQuestion() {
+  const { quiz, current, done } = playerState;
+  const el = document.getElementById("public-quiz-content");
+  const total = quiz.questions.length;
+
+  if (done) {
+    const pct = Math.round((playerState.score / total) * 100);
+    el.innerHTML = `
+      <div class="score-display">
+        <span class="score-big">${pct}%</span>
+        <p class="score-label">${playerState.score} z ${total} poprawnych</p>
+        <p style="margin-top:1rem;font-size:13px;color:var(--text-2)">Stwórz swoje quizy na <strong>StudyFlow</strong></p>
+        <a href="${window.location.origin}${window.location.pathname}" class="btn-primary sm" style="display:inline-block;margin-top:1rem;text-decoration:none;text-align:center">Zaloguj się →</a>
+      </div>
+    `;
+    return;
+  }
+
+  const q = quiz.questions[current];
+  const pct = Math.round((current / total) * 100);
+
+  el.innerHTML = `
+    <div class="player-progress">
+      <span>${current + 1}</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <span>${total}</span>
+    </div>
+    <div class="player-question">
+      <p class="player-q-text">${esc(q.text)}</p>
+      <div class="player-options">
+        ${q.options.map((opt, i) => `
+          <div class="player-option" id="pub-opt-${i}" onclick="selectPublicAnswer(${i})">
+            <span class="option-key-badge">${["A", "B", "C", "D"][i]}</span>
+            ${esc(opt)}
+          </div>
+        `).join("")}
+      </div>
+    </div>
+    <div class="modal-actions" id="pub-actions" style="display:none">
+      <button class="btn-primary sm" onclick="nextPublicQuestion()">
+        ${current + 1 < total ? "Następne →" : "Zakończ"}
+      </button>
+    </div>
+  `;
+}
+
+window.selectPublicAnswer = function (idx) {
+  if (playerState.answers[playerState.current] !== undefined) return;
+  playerState.answers[playerState.current] = idx;
+  const correct = playerState.quiz.questions[playerState.current].correct;
+  document.querySelectorAll(".player-option").forEach((el, i) => {
+    el.onclick = null;
+    if (i === correct) el.classList.add("correct");
+    if (i === idx && idx !== correct) el.classList.add("wrong");
+  });
+  if (idx === correct) playerState.score++;
+  document.getElementById("pub-actions").style.display = "flex";
+};
+
+window.nextPublicQuestion = function () {
+  const { quiz, current } = playerState;
+  if (current + 1 >= quiz.questions.length) {
+    playerState.done = true;
+  } else {
+    playerState.current++;
+  }
+  renderPublicQuestion();
 };
 
 // ─────────────────────────────────────────────────────

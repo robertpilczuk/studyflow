@@ -1569,6 +1569,38 @@ body {
   transition   : background 0.3s;
 }
 
+/* ── PUBLIC QUIZ CARD ── */
+.public-quiz-card {
+  position     : relative;
+  z-index      : 10;
+  background   : var(--bg-2);
+  border       : 1px solid var(--border-mid);
+  border-radius: var(--radius-lg);
+  padding      : 2rem;
+  width        : 100%;
+  max-width    : 560px;
+  max-height   : 90vh;
+  overflow-y   : auto;
+}
+
+.public-quiz-header {
+  margin-bottom : 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom : 1px solid var(--border);
+}
+
+/* ── QUIZ PUBLIC BADGE ── */
+.quiz-public-badge {
+  font-family  : var(--font-mono);
+  font-size    : 10px;
+  padding      : 2px 8px;
+  background   : rgba(34, 197, 94, 0.1);
+  border       : 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 20px;
+  color        : var(--accent-green);
+  white-space  : nowrap;
+}
+
 /* ── NOTES TOOLBAR ── */
 .notes-toolbar {
   display      : flex;
