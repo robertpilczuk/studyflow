@@ -811,12 +811,43 @@ function renderPlayerQuestion() {
   if (done) {
     const score = playerState.score;
     const pctScore = Math.round((score / total) * 100);
+    const scoreClass = pctScore >= 80 ? "high" : pctScore >= 50 ? "mid" : "low";
+    const scoreColor = pctScore >= 80 ? "var(--accent-green)" : pctScore >= 50 ? "var(--accent-amber)" : "var(--accent-coral)";
+
+    const questionsReview = quiz.questions.map((q, i) => {
+      const userAnswer = playerState.answers[i];
+      const isCorrect = userAnswer === q.correct;
+      const userAnswerText = userAnswer >= 0 ? q.options[userAnswer] : "Brak odpowiedzi";
+      const correctAnswerText = q.options[q.correct];
+      return `
+        <div class="review-item ${isCorrect ? 'review-correct' : 'review-wrong'}">
+          <div class="review-item-header">
+            <span class="review-icon">${isCorrect ? '✅' : '❌'}</span>
+            <p class="review-q-text">${esc(q.text)}</p>
+          </div>
+          ${!isCorrect ? `
+            <div class="review-answers">
+              <p class="review-user-answer">Twoja odpowiedź: <strong>${esc(userAnswerText)}</strong></p>
+              <p class="review-correct-answer">Poprawna odpowiedź: <strong>${esc(correctAnswerText)}</strong></p>
+            </div>
+          ` : `
+            <div class="review-answers">
+              <p class="review-correct-answer">Poprawna odpowiedź: <strong>${esc(correctAnswerText)}</strong></p>
+            </div>
+          `}
+        </div>
+      `;
+    }).join("");
+
     content.innerHTML = `
       <div class="score-display">
-        <span class="score-big">${pctScore}%</span>
+        <span class="score-big" style="color:${scoreColor}">${pctScore}%</span>
         <p class="score-label">${score} z ${total} poprawnych odpowiedzi</p>
       </div>
-      <div class="modal-actions">
+      <div class="review-list">
+        ${questionsReview}
+      </div>
+      <div class="modal-actions" style="margin-top:1rem">
         <button class="btn-ghost" onclick="closePlayer()">Zamknij</button>
         <button class="btn-primary sm" onclick="startQuiz('${quiz.id}')">Spróbuj ponownie</button>
       </div>
@@ -873,14 +904,13 @@ window.selectAnswer = function (idx) {
   if (timerInterval) clearInterval(timerInterval);
   playerState.answers[playerState.current] = idx;
   const q = playerState.quiz.questions[playerState.current];
-  const correct = q.correct;
 
+  // Tylko zaznacz wybraną odpowiedź — bez ujawniania poprawnej
   document.querySelectorAll(".player-option").forEach((el, i) => {
     el.onclick = null;
-    if (i === correct) el.classList.add("correct");
-    if (i === idx && idx !== correct) el.classList.add("wrong");
+    if (i === idx) el.classList.add("selected");
   });
-  if (idx === correct) playerState.score++;
+  if (idx === q.correct) playerState.score++;
   document.getElementById("player-actions").style.display = "flex";
 };
 
@@ -1331,8 +1361,7 @@ window.selectPublicAnswer = function (idx) {
   const correct = playerState.quiz.questions[playerState.current].correct;
   document.querySelectorAll(".player-option").forEach((el, i) => {
     el.onclick = null;
-    if (i === correct) el.classList.add("correct");
-    if (i === idx && idx !== correct) el.classList.add("wrong");
+    if (i === idx) el.classList.add("selected");
   });
   if (idx === correct) playerState.score++;
   document.getElementById("pub-actions").style.display = "flex";
