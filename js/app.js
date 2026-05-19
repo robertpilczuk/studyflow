@@ -111,6 +111,17 @@ window.checkVerification = async function () {
   }
 };
 
+
+// ─────────────────────────────────────────────────────
+// LANDING PAGE
+// ─────────────────────────────────────────────────────
+window.showAuthFromLanding = function (tab) {
+  document.getElementById("landing-screen").style.display = "none";
+  document.getElementById("auth-screen").style.display = "";
+  switchAuthTab(tab);
+  trackAnalytics("landing_cta_clicked", { tab });
+};
+
 // ─────────────────────────────────────────────────────
 // AUTH HELPERS
 // ─────────────────────────────────────────────────────
@@ -242,12 +253,14 @@ function translateAuthError(code) {
 // ─────────────────────────────────────────────────────
 function showAuth() {
   document.getElementById("loading-screen").style.display = "none";
-  document.getElementById("auth-screen").style.display = "";
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("landing-screen").style.display = "";
   document.getElementById("app").style.display = "none";
 }
 
 function showApp() {
   document.getElementById("loading-screen").style.display = "none";
+  document.getElementById("landing-screen").style.display = "none";
   // Sprawdź weryfikację e-mail (pomijaj na localhost)
   const isDev = window.location.hostname === "127.0.0.1" ||
     window.location.hostname === "localhost";

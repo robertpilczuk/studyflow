@@ -23,6 +23,101 @@
 <div id="offline-banner" class="offline-banner">⚠ Brak połączenia z internetem — dane mogą być nieaktualne</div>
 
 <!-- ═══════════════════════════════════════════════════════
+     LANDING PAGE
+═══════════════════════════════════════════════════════ -->
+<div id="landing-screen" style="display:none" class="landing-screen">
+  <div class="auth-bg-grid"></div>
+
+  <!-- NAV -->
+  <nav class="landing-nav">
+    <div class="landing-nav-logo">
+      <span class="logo-mark sm">SF</span>
+      <span class="logo-text">StudyFlow</span>
+    </div>
+    <div class="landing-nav-actions">
+      <button class="btn-ghost" onclick="showAuthFromLanding('login')">Zaloguj się</button>
+      <button class="btn-primary sm" onclick="showAuthFromLanding('register')">Zacznij za darmo</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="landing-hero">
+    <div class="landing-hero-badge">✨ Powered by Firebase & Gemini AI</div>
+    <h1 class="landing-hero-title">Ucz się mądrzej,<br/>nie ciężej</h1>
+    <p class="landing-hero-sub">StudyFlow to Twój asystent nauki — notatki, quizy, fiszki i generowanie materiałów przez AI w jednym miejscu.</p>
+    <div class="landing-hero-actions">
+      <button class="landing-btn-primary" onclick="showAuthFromLanding('register')">
+        Zacznij za darmo →
+      </button>
+      <button class="landing-btn-ghost" onclick="showAuthFromLanding('login')">
+        Mam już konto
+      </button>
+    </div>
+    <p class="landing-hero-note">Bezpłatnie · Bez karty kredytowej · Firebase Spark Plan</p>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="landing-features">
+    <div class="landing-feature-card">
+      <div class="landing-feature-icon">📝</div>
+      <h3>Notatki</h3>
+      <p>Twórz i organizuj notatki z kategoriami. Eksportuj do PDF jednym kliknięciem.</p>
+    </div>
+    <div class="landing-feature-card">
+      <div class="landing-feature-icon">🎯</div>
+      <h3>Quizy</h3>
+      <p>Buduj quizy single-choice z timerem. Udostępniaj przez publiczny link bez logowania.</p>
+    </div>
+    <div class="landing-feature-card">
+      <div class="landing-feature-icon">🃏</div>
+      <h3>Fiszki</h3>
+      <p>System powtórek spaced repetition. Im więcej ćwiczysz, tym rzadziej widzisz to co już umiesz.</p>
+    </div>
+    <div class="landing-feature-card">
+      <div class="landing-feature-icon">✨</div>
+      <h3>Generowanie AI</h3>
+      <p>Wpisz temat — Gemini wygeneruje quiz lub talię fiszek w kilka sekund.</p>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="landing-stats">
+    <div class="landing-stat">
+      <p class="landing-stat-val">6</p>
+      <p class="landing-stat-label">usług Firebase</p>
+    </div>
+    <div class="landing-stat-divider"></div>
+    <div class="landing-stat">
+      <p class="landing-stat-val">100%</p>
+      <p class="landing-stat-label">bezpłatne</p>
+    </div>
+    <div class="landing-stat-divider"></div>
+    <div class="landing-stat">
+      <p class="landing-stat-val">AI</p>
+      <p class="landing-stat-label">Gemini powered</p>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="landing-cta">
+    <h2 class="landing-cta-title">Gotowy żeby zacząć?</h2>
+    <p class="landing-cta-sub">Dołącz i zacznij uczyć się efektywniej już dziś.</p>
+    <button class="landing-btn-primary" onclick="showAuthFromLanding('register')">
+      Utwórz darmowe konto →
+    </button>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="landing-footer">
+    <span>© 2026 StudyFlow</span>
+    <span>·</span>
+    <span>Zbudowane na Firebase</span>
+    <span>·</span>
+    <a href="https://github.com/robertpilczuk/studyflow" target="_blank" style="color:var(--text-3)">GitHub</a>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
      AUTH SCREEN
 ═══════════════════════════════════════════════════════ -->
 <div id="auth-screen" class="auth-screen" style="display:none">
