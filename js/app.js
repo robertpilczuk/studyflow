@@ -919,17 +919,21 @@ function renderPlayerQuestion() {
 }
 
 window.selectAnswer = function (idx) {
-  if (playerState.answers[playerState.current] !== undefined) return;
-  if (timerInterval) clearInterval(timerInterval);
-  playerState.answers[playerState.current] = idx;
   const q = playerState.quiz.questions[playerState.current];
+  const alreadyConfirmed = playerState.answers[playerState.current] !== undefined
+    && document.getElementById("player-actions").style.display !== "none"
+    && playerState._confirmed;
 
-  // Tylko zaznacz wybraną odpowiedź — bez ujawniania poprawnej
-  document.querySelectorAll(".player-option").forEach((el, i) => {
-    el.onclick = null;
-    if (i === idx) el.classList.add("selected");
-  });
-  if (idx === q.correct) playerState.score++;
+  if (alreadyConfirmed) return;
+
+  // Usuń poprzedni wybór
+  document.querySelectorAll(".player-option").forEach(el => el.classList.remove("selected"));
+
+  // Zaznacz nową odpowiedź
+  document.getElementById("popt-" + idx)?.classList.add("selected");
+  playerState._pendingAnswer = idx;
+
+  // Pokaż przycisk Następne
   document.getElementById("player-actions").style.display = "flex";
 };
 
